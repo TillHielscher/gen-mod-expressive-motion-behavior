@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "animation-dmp"
+version = "0.1.0"
+description = "A Python package for animation DMPs"
+authors = [{ name = "Till Hielscher", email = "till.hielscher@ki.uni-stuttgart.de" }]
+license = { text = "MIT" }
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "numpy",
+    "matplotlib",
+    "scipy"
+]

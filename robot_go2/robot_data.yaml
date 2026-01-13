@@ -1,0 +1,57 @@
+capabilities: |
+  Torso: The robots dog-like torso can tilt in all directions.
+  Legs: The robot has four legs which can be moved
+
+primitive_lib_picked:
+  look_left: Look towards the left side by turning the torso.
+  look_right: Look towards the right side by turning the torso..
+  look_up: Look upwards by tilting the torso.
+  look_down: Look downwards by tilting the torso.
+  turn_left: Turn the entire torso to the left.
+  turn_right: Turn the entire torso to the right.
+  sit_down: Sit down by bending the legs and then return to a standing position.
+  lie_down: Lie down by bending the legs and then return to a standing position.
+  lower_torso: Lower the torso (not completely lying down) by bending the legs and then return to a standing position.
+  raise_front_leg: Raise the front left leg similar to a waving gesture or offering to shake hands and then return to a standing position.
+
+idle_lib_picked:
+  - Zero
+
+parameter_ranges:
+  Anticipation:
+    min: 0.0
+    max: 0.2
+  Follow_Through:
+    min: 0.0
+    max: 3.0
+  Follow_Through_Data:
+    relation1:
+      source: "RElbowRoll"
+      target: "RShoulderRoll"
+      inverse: False
+      condition: "RElbowYaw"
+      lower_limit: -0.4
+      upper_limit: 0.4
+    relation2:
+      source: "RElbowRoll"
+      target: "RShoulderPitch"
+      inverse: False
+      condition: "RElbowYaw"
+      lower_limit: -2.0
+      upper_limit: -1.6
+    relation3:
+      source: "RElbowRoll"
+      target: "RShoulderPitch"
+      inverse: False
+      condition: "RElbowYaw"
+      lower_limit: 1.6
+      upper_limit: 2.0
+  Arcs:
+    min: -5
+    max: 10
+  Timing:
+    min: 0.5
+    max: 2.0
+  Exaggeration:
+    min: 0.5
+    max: 1.5

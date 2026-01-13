@@ -1,0 +1,409 @@
+Body: turn the base
+capabilities: |
+  Arms: The robot has two arms that can be used for gestures and interactions.
+  Head: The robot has a head that can turn and tilt.
+  Torso: The robot that can lean as part of given gestures.
+
+#  Wave_arm_High: Wave the left arm high above the head.
+
+primitive_lib_picked:  
+  settle_to-stand: Settle into the standing position with composed motion indicationg bracing oneself.
+  wave_arm: Wave the arm as your default welcoming or greeting gesture (Make sure to not use a bow for greeting and welcoming). Not suitable for simple aknowledgement.
+  show_surroundings: A wide arm gesture indicating the space all around the robot.
+  complain: A gesture of strong complaint.
+  calm_surroundings: Calm down surrounding people.
+  make_space: Indicate that the surrounding people should make space and move away.
+  elaborate: Elaborate on a point involving hand movements to emphasize details.
+  decide_options: Indicate a decision by presenting options.
+  check_floor_left: Look at the floor on the left side immediately in front of the robot.
+  check_floor_right: Look at the floor on the right side immediately in front of the robot.
+  react_funny: React to a funny context.
+  sway_joyful: Sway joyfully indicating upbeat and enjoying mood.
+  show_disappointment: Show disappointment by collapsing the body.
+  question: Indicate that the robot questions the context or tries to find clarification.
+  invite_closer: Invite a person to come closer and pay attention.
+  point_left: Point towards the left side with a wide presenting motion.
+  point_right: Point towards the right side with a wide presenting motion.
+  indicate_left: Indicate towards something on the left side. This is so subtle that it can also be used to show attention to the left side.
+  indicate_right: Indicate towards something on the right side. . This is so subtle that it can also be used to show attention to the right side.
+  bow_respectful: A highly respectful bow gesture, lowering the head and upper body slightly. Can only be used with a strong motvation and requires a lot of energy.
+  bow_humble: A brief, shallow bow with gently open arms, expressing humble acknowledgment, quiet readiness or a gesture of thanks. Perfect for simple aknowledgement.
+  show_excitement: Show excitement subtly.
+  explain: An explaining gesture.
+  disagree_shake_head: Indicate disagreement by shaking the head.
+  disagree_dismissive_wave: Indicate disagreement by moving the hand.
+  celebrate: A celebratory gesture, where both arms are raised. Great for parties but with slower execution.
+  think: Move the hand to the chin to indicate thinking.
+  point_forward: Point forward.
+  hands_on_hips: Place the hands on the hips, indicating confidence, readiness or judgement.  
+  nod_agreement: Head nodding (multiple nods) to show agreement.
+  shrug: Shrug foreams and sligtly tilt head to show uncertainty or lack of knowledge.
+  scratch_head: Scratch the head with one arm to show thinking or lack of knowledge.
+  offer_item: Move one arm forward with the palm facing up to offer to give an item.
+
+temp:
+  nod_confirmation: Single head nod to show confirmation when asked for a fact.
+  return_to_stand: Return to a standing position.
+  
+
+
+primitive_lib_picked_old:
+  Back_to_stand: Return to a standing position.
+  Settle_to_stand: Settle into the standing position with composed motion indicationg bracing oneself.
+  Wave_arm: Wave the left arm.  
+  Humble_bow: A brief, shallow bow paired with gently open arms, expressing humble acknowledgment, quiet readiness, or a soft welcome.
+  Show_surroundings: A wide arm gesture indicating the space all around the robot.
+  Complain_strong: A gesture of strong complaint.
+  Calm_down: A gesture to calm down surrounding people.
+  Make_space: A gesture to make space and indicate that the surrounding people should move away.
+  Elaborate: A gesture to elaborate on a point involving hand movements to emphasize details.
+  Decide_options: A gesture to indicate a decision by presenting options.
+  Check_Floor_Left: A gesture to look at the floor on the left side immediately in front of the robot.
+  Check_Floor_Right: A gesture to look at the floor on the right side immediately in front of the robot.
+  Funny: A gesture to react to a funny context.
+  Sway_joy: A gesture to sway joyfully indicating upbeat and enjoying mood.
+  Disappointment: A gesture to show disappointment.
+  Question: A gesture to indicate that the robot questions the context
+  Attract: Gesture that a person should come closer to the robot and pay attention.
+  Point_Left: Point towards the left side with a wide presenting motion.
+  Point_Right: Point towards the right side with a wide presenting motion.
+  Indicate_Left: A gesture to indicate towards something on the left side. This is so subtle that it can also be used to show attention to the left side.
+  Indicate_Right: A gesture to indicate towards something on the right side. . This is so subtle that it can also be used to show attention to the right side.
+  Bow_down: A respectful bow gesture, lowering the head and upper body slightly.
+  Excited: A gesture to show excitement.
+  Explain: An explaining gesture.
+  Disagree_head: A gesture to indicate disagreement by shaking the head.
+  Disagree_hand: A gesture to indicate disagreement by moving the hand.
+  Celebrate: A celebratory gesture, where both arms are raised.
+  Think: Move the hand to the chin to indicate thinking.
+  Point_Front: Point forward.
+  Hands_on_hips: A gesture where the hands are placed on the hips, indicating confidence, readiness or judgement.
+
+idle_lib_picked:
+  - Zero
+  
+  
+
+idle_lib_additions:
+  - Zero
+  - copyOfZero
+  - 06_LookBumpersRight_01
+  - 06_Looking_around_01
+
+
+primitive_lib:
+  Back_to_stand: Return the robot to a standing position.
+  Show_Body: Present the robot's full body and return to initial configuration.
+  Show_Bumper_Left: Indicate the left bumper area and return to initial configuration.
+  Show_Bumper_Right: Indicate the right bumper area and return to initial configuration.
+  Show_Hand_Both: Display both hands and return to initial configuration.
+  Show_Hand_Left: Display the left hand and return to initial configuration.
+  Show_Hand_Right: Display the right hand and return to initial configuration.
+  Show_Head: Highlight the robot's head and return to initial configuration.
+  Show_Micro: Point to or emphasize the microphone area and return to initial configuration.
+  Show_Self: Gesture to indicate the robot itself and return to initial configuration.
+  Show_Shoulders: Highlight the shoulders and return to initial configuration.
+  Show_Tablet: Present the tablet or screen and return to initial configuration.
+  Make_Space: Create space by adjusting the robot's position and return to initial configuration.
+  Enumeration: Perform a gesture to indicate counting or listing and return to initial configuration.
+  Check_Left: Look or check toward the left side and return to initial configuration.
+  Check_Right: Look or check toward the right side and return to initial configuration.
+  Funny: Perform a playful or humorous gesture and return to initial configuration.
+  Look_Bumpers_Left: Focus on the left bumper area and return to initial configuration.
+  Look_Bumpers_Right: Focus on the right bumper area and return to initial configuration.
+  Look_Hand_Left: Look at the left hand and return to initial configuration.
+  Look_Hand_Right: Look at the right hand and return to initial configuration.
+  Looking_around: Perform a general sweeping gaze around and return to initial configuration.
+  Looking_around_wide: Perform a wide sweeping gaze around and return to initial configuration.
+  Play_With_Hand_Left: Gesture or interact using the left hand and return to initial configuration.
+  Play_With_Hand_Right: Gesture or interact using the right hand and return to initial configuration.
+  Nice_Reaction: Show a positive or pleasant response and return to initial configuration.
+  Sad_Reaction: Show a sad or disappointed response and return to initial configuration.
+  Attract_L: Perform a gesture to attract attention to the left and return to initial configuration.
+  Attract_R: Perform a gesture to attract attention to the right and return to initial configuration.
+  Point_Front_L: Point forward with the left hand and return to initial configuration.
+  Point_Front_R: Point forward with the right hand and return to initial configuration.
+  Point_Half_L: Point halfway to the left and return to initial configuration.
+  Point_Half_R: Point halfway to the right and return to initial configuration.
+  Point_Medium_L: Point at a medium distance to the left and return to initial configuration.
+  Point_Medium_R: Point at a medium distance to the right and return to initial configuration.
+  Point_Short_Front_L: Point at a short distance forward with the left hand and return to initial configuration.
+  Point_Short_Front_R: Point at a short distance forward with the right hand and return to initial configuration.
+  Point_Short_Half_L: Point at a short distance halfway to the left and return to initial configuration.
+  Point_Short_Half_R: Point at a short distance halfway to the right and return to initial configuration.
+  Point_Short_Medium_L: Point at a short medium distance to the left and return to initial configuration.
+  Point_Short_Medium_R: Point at a short medium distance to the right and return to initial configuration.
+  Pose_Left: Strike a pose facing left and return to initial configuration.
+  Pose_Right: Strike a pose facing right and return to initial configuration.
+  BowShort: Perform a short bow gesture and return to initial configuration.
+  But: Express hesitation or contradiction and return to initial configuration.
+  CalmDown: Gesture to calm the user or deescalate a situation and return to initial configuration.
+  Choice: Indicate making a decision or presenting options and return to initial configuration.
+  Desperate: Show a gesture of desperation or urgency and return to initial configuration.
+  Enthusiastic: Display an excited or enthusiastic reaction and return to initial configuration.
+  Everything: Gesture that conveys the idea of 'everything' or totality and return to initial configuration.
+  Excited: Show a visibly excited response and return to initial configuration.
+  Explain: Perform a gesture that indicates explaining or providing information and return to initial configuration.
+  Far: Gesture to indicate something far away and return to initial configuration.
+  Give: Perform a giving gesture, as if handing something to someone and return to initial configuration.
+  Hey: Get someone's attention informally and return to initial configuration.
+  DontKnow: Express not knowing or uncertainty and return to initial configuration.
+  Me: Gesture indicating oneself and return to initial configuration.
+  Disagree: Indicate disagreement or refusal and return to initial configuration.
+  Emptiness: Show a gesture that conveys the idea of 'nothing' or absence and return to initial configuration.
+  Please: Gesture to request something politely and return to initial configuration.
+  ShowFloor: Point or gesture toward the floor and return to initial configuration.
+  ShowSky: Gesture upward, as if referencing the sky and return to initial configuration.
+  ShowTablet: Indicate or present the tablet or screen and return to initial configuration.
+  Thinking: Perform a gesture indicating deep thought or consideration and return to initial configuration.
+  waiting-ShowSky: Idle gesture while looking at the sky and return to initial configuration.
+  waiting-Think: Idle gesture mimicking a thinking pose and return to initial configuration.
+  Agree: Nod or gesture to indicate agreement or affirmation and return to initial configuration.
+  You: Gesture directed toward the user or another person and return to initial configuration.
+  YouKnowWhat: Gesture indicating a realization or important point and return to initial configuration.
+  Raise_Left_Arm: Raise the left arm (can only be called from initial configuration).
+  Raise_Right_Arm: Raise the right arm (can only be called from initial configuration).
+  Lower_Left_Arm: Lower the left arm (can only be called from configuration where left arm is raised).
+  Lower_Right_Arm: Lower the right arm (can only be called from configuration where right arm is raised).
+
+primitive_lib_aussortiert:
+  Hello: Perform a greeting gesture.
+  Look_Left: Look directly to the left.
+  Look_Right: Look directly to the right.
+  Raise_Left_Arm: Raise the left arm.
+  Raise_Right_Arm: Raise the right arm.
+  Lower_Left_Arm: Lower the left arm.
+  Lower_Right_Arm: Lower the right arm.
+  Look_Far_Left: Look far out to the left and return to initial configuration.
+  Look_Far_Right: Look far out to the right and return to initial configuration.
+  Look_At_Sides_Left: Look toward the left side and return to initial configuration.
+  Look_At_Sides_Right: Look toward the right side and return to initial configuration.
+
+
+parameter_ranges:
+  Anticipation:
+    min: 0.0
+    max: 0.4
+  Follow_Through:
+    min: 0.0
+    max: 5.0
+  Follow_Through_Data:
+    relation1:
+      target: HeadPitch
+      source: HipRoll
+      inverse: False
+      condition: HeadYaw
+      lower_limit: -1.8760549246231155
+      upper_limit: -1.2681712060301509
+    relation2:
+      target: HeadPitch
+      source: HipRoll
+      inverse: False
+      condition: HeadYaw
+      lower_limit: 1.2681712060301504
+      upper_limit: 1.8760549246231153
+    relation3:
+      target: LShoulderPitch
+      source: HipPitch
+      inverse: False
+      condition: HipRoll
+      lower_limit: -0.3130628743718593
+      upper_limit: 0.3130628743718593
+    relation4:
+      target: RShoulderPitch
+      source: HipPitch
+      inverse: False
+      condition: HipRoll
+      lower_limit: -0.3130628743718593
+      upper_limit: 0.3130628743718593
+    relation5:
+      target: LShoulderRoll
+      source: HipRoll
+      inverse: False
+      condition: LShoulderPitch
+      lower_limit: -1.8760549246231155
+      upper_limit: -1.2681712060301509
+    relation6:
+      target: LShoulderRoll
+      source: HipRoll
+      inverse: False
+      condition: LShoulderPitch
+      lower_limit: 1.2681712060301504
+      upper_limit: 1.8760549246231153
+    relation7:
+      target: LElbowYaw
+      source: LShoulderPitch
+      inverse: False
+      condition: LShoulderRoll
+      lower_limit: 1.2966746537688443
+      upper_limit: 1.56207
+    relation8:
+      target: LElbowRoll
+      source: LShoulderRoll
+      inverse: False
+      condition: LElbowYaw
+      lower_limit: -0.2620188442211058
+      upper_limit: 0.26201884422110533
+    relation9:
+      target: LWristYaw
+      source: LElbowYaw
+      inverse: False
+      condition: LElbowRoll
+      lower_limit: -0.3131507236180904
+      upper_limit: -0.00872665
+    relation10:
+      target: RShoulderRoll
+      source: HipRoll
+      inverse: False
+      condition: RShoulderPitch
+      lower_limit: -1.8760549246231155
+      upper_limit: -1.2681712060301509
+    relation11:
+      target: RShoulderRoll
+      source: HipRoll
+      inverse: False
+      condition: RShoulderPitch
+      lower_limit: 1.2681712060301504
+      upper_limit: 1.8760549246231153
+    relation12:
+      target: RElbowYaw
+      source: RShoulderPitch
+      inverse: False
+      condition: RShoulderRoll
+      lower_limit: -1.56207
+      upper_limit: -1.2966746537688443
+    relation13:
+      target: RElbowRoll
+      source: RShoulderRoll
+      inverse: False
+      condition: RElbowYaw
+      lower_limit: -0.2620188442211058
+      upper_limit: 0.26201884422110533
+    relation14:
+      target: RWristYaw
+      source: RElbowYaw
+      inverse: False
+      condition: RElbowRoll
+      lower_limit: 0.00872665
+      upper_limit: 0.3131507236180905
+    relation15:
+      target: HipPitch
+      source: KneePitch
+      inverse: False
+      condition: None
+      lower_limit: None
+      upper_limit: None
+  Arcs:
+    min: -5
+    max: 10
+  Timing:
+    min: 0.5
+    max: 1.75
+  Exaggeration:
+    min: 0.25
+    max: 1.5
+
+parameter_ranges1:
+  Anticipation:
+    min: 0.0
+    max: 0.2
+  Follow_Through:
+    min: 0.0
+    max: 3.0
+  Follow_Through_Data:
+    relation1:
+      source: "RElbowRoll"
+      target: "RShoulderRoll"
+      inverse: False
+      condition: "RElbowYaw"
+      lower_limit: -0.4
+      upper_limit: 0.4
+    relation2:
+      source: "RElbowRoll"
+      target: "RShoulderPitch"
+      inverse: False
+      condition: "RElbowYaw"
+      lower_limit: -2.0
+      upper_limit: -1.6
+    relation3:
+      source: "RElbowRoll"
+      target: "RShoulderPitch"
+      inverse: False
+      condition: "RElbowYaw"
+      lower_limit: 1.6
+      upper_limit: 2.0
+  Arcs:
+    min: -5
+    max: 10
+  Timing:
+    min: 0.5
+    max: 2.0
+  Exaggeration:
+    min: 0.5
+    max: 1.5
+
+primitive_lib1: |
+  Back_to_stand: Return the robot to a standing position.
+  Hello: Perform a greeting gesture.
+  Show_Body: Present the robot's full body.
+  Show_Bumper_Left: Indicate the left bumper area.
+  Show_Bumper_Right: Indicate the right bumper area.
+  Show_Hand_Both: Display both hands.
+  Show_Hand_Left: Display the left hand.
+  Show_Hand_Right: Display the right hand.
+  Show_Head: Highlight the robot's head.
+  Show_Micro: Point to or emphasize the microphone area.
+  Show_Self: Gesture to indicate the robot itself.
+  Show_Shoulders: Highlight the shoulders.
+  Show_Tablet: Present the tablet or screen.
+  Make_Space: Create space by adjusting the robot's position.
+  Enumeration: Perform a gesture to indicate counting or listing.
+  Check_Left: Look or check toward the left side.
+  Check_Right: Look or check toward the right side.
+  Funny: Perform a playful or humorous gesture.
+  Look_At_Sides_Left: Look toward the left side.
+  Look_At_Sides_Right: Look toward the right side.
+  Look_Bumpers_Left: Focus on the left bumper area.
+  Look_Bumpers_Right: Focus on the right bumper area.
+  Look_Far_Left: Look far out to the left.
+  Look_Far_Right: Look far out to the right.
+  Look_Hand_Left: Look at the left hand.
+  Look_Hand_Right: Look at the right hand.
+  Look_Left: Look directly to the left.
+  Look_Right: Look directly to the right.
+  Looking_around: Perform a general sweeping gaze around.
+  Looking_around_wide: Perform a wide sweeping gaze around.
+  Motor_Sound_Left: React to or simulate a motor sound on the left side.
+  Motor_Sound_Right: React to or simulate a motor sound on the right side.
+  Play_With_Hand_Left: Gesture or interact using the left hand.
+  Play_With_Hand_Right: Gesture or interact using the right hand.
+  Nice_Reaction: Show a positive or pleasant response.
+  Sad_Reaction: Show a sad or disappointed response.
+  Attract_L: Perform a gesture to attract attention to the left.
+  Attract_R: Perform a gesture to attract attention to the right.
+  Point_Front_L: Point forward with the left hand.
+  Point_Front_R: Point forward with the right hand.
+  Point_Half_L: Point halfway to the left.
+  Point_Half_R: Point halfway to the right.
+  Point_Medium_L: Point at a medium distance to the left.
+  Point_Medium_R: Point at a medium distance to the right.
+  Point_Short_Front_L: Point at a short distance forward with the left hand.
+  Point_Short_Front_R: Point at a short distance forward with the right hand.
+  Point_Short_Half_L: Point at a short distance halfway to the left.
+  Point_Short_Half_R: Point at a short distance halfway to the right.
+  Point_Short_Medium_L: Point at a short medium distance to the left.
+  Point_Short_Medium_R: Point at a short medium distance to the right.
+  Pose_Left: Strike a pose facing left.
+  Pose_Right: Strike a pose facing right
+
+primitive_lib_idle:
+  - Zero_no_head
+#  - Zero
+#  - Zero
+#  - Idle_Head_Left
+#  - Idle_Head_Up
+#  - Idle_Hear_Right_Up
+#  - Look_Bumpers_Left
+#  - Look_Bumpers_Right
+#  - Attract_L
+#  - Attract_R

@@ -1,0 +1,127 @@
+capabilities: |
+  Arms: The robot has two arms that can be used for gestures and interactions.
+  Head: The robot has a head that can turn and tilt.
+  Torso: The robot that can lean as part of given gestures.
+  All individual movement that the robot can to return to its default pose before a new movement is started.
+  Generally the robot needs to take particular care when choosing directions and angles for its movements aligned with the context. When something happens towards the one direction it move towards that direction aswell. MAKE SURE TO BE CAREFUL ABOUT WHETHER THE CONTEXT IS ABOUT LEFT OR RIGHT!
+
+primitive_lib_picked:
+  raise_left_arm_forward_180: Raise the LEFT arm forward 180 degrees. This could be used to greet someone.
+  raise_left_arm_forward_90: Raise the LEFT arm forward 90 degrees. This could be used to point forward.
+  raise_left_arm_forward_45: Raise the LEFT arm forward 45 degrees. This could be used to indicate towards something in front.
+  raise_right_arm_forward_180: Raise the RIGHT arm forward 180 degrees. This could be used to greet someone.
+  raise_right_arm_forward_90: Raise the RIGHT arm forward 90 degrees. This could be used to point forward.
+  raise_right_arm_forward_45: Raise the RIGHT arm forward 45 degrees. This could be used to indicate towards something in front.
+  raise_left_arm_side_90: Raise the LEFT arm to the side 90 degrees. This could be used to point to the left.
+  raise_left_arm_side_45: Raise the LEFT arm to the side 45 degrees. This could be used to indicate towards something to the left.
+  raise_right_arm_side_90: Raise the RIGHT arm to the side 90 degrees. This could be used to point to the right.
+  raise_right_arm_side_45: Raise the RIGHT arm to the side 45 degrees. This could be used to indicate towards something to the right.
+  turn_head_left_90: Turn the head to the LEFT 90 degrees. This could be used to look at something to the left. You can not look to the left when something is happening on the right.
+  turn_head_left_45: Turn the head to the LEFT 45 degrees. This could be used to glance at something towards the left. You can not look to the left when something is happening on the right.
+  turn_head_right_90: Turn the head to the RIGHT 90 degrees. This could be used to look at something to the right. You can not look to the right when something is happening on the left.
+  turn_head_right_45: Turn the head to the RIGHT 45 degrees. This could be used to glance at something towards the right. You can not look to the right when something is happening on the left.
+  tilt_head_up:  Tilt the head UPWARDS. This could be used to look at something above. By calling tilt_head_up and tilt_head_down (repeatedly) the robot can nod.
+  tilt_head_down: Tilt the head DOWNWARDS. This could be used to look at something below. By calling tilt_head_up and tilt_head_down (repeatedly) the robot can nod.
+  lean_left_30: Lean the torso to the LEFT 30 degrees.
+  lean_left_15: Lean the torso to the LEFT 15 degrees.
+  lean_right_30: Lean the torso to the RIGHT 30 degrees.
+  lean_right_15: Lean the torso to the RIGHT 15 degrees.
+  lean_forward_45: Lean the torso forward 45 degrees. This could be used to bow down.
+  lean_forward_20: Lean the torso forward 20 degrees. This could be used to subtly engange into something.
+  lean_backward_45: Lean the torso backward 45 degrees.
+  lean_backward_20: Lean the torso backward 20 degrees.
+  angle_left_arm_90: Angle the LEFT arm 90 degrees. This could be used to subtly indicate towards something to the left.
+  angle_left_arm_45: Angle the LEFT arm 45 degrees. This could be used to very subtly indicate towards something to the left.
+  angle_right_arm_90: Angle the RIGHT arm 90 degrees. This could be used to subtly indicate towards something to the right.
+  angle_right_arm_45: Angle the RIGHT arm 45 degrees. This could be used to very subtly indicate towards something to the right.
+
+
+primitive_lib_picked2:
+  raise_left_arm_forward_180: Raise the left arm forward 180 degrees.
+  raise_left_arm_forward_90: Raise the left arm forward 90 degrees.
+  raise_left_arm_forward_45: Raise the left arm forward 45 degrees.
+  raise_right_arm_forward_180: Raise the right arm forward 180 degrees.
+  raise_right_arm_forward_90: Raise the right arm forward 90 degrees.
+  raise_right_arm_forward_45: Raise the right arm forward 45 degrees.
+  raise_left_arm_side_90: Raise the left arm to the side 90 degrees.
+  raise_left_arm_side_45: Raise the left arm to the side 45 degrees.
+  raise_right_arm_side_90: Raise the right arm to the side 90 degrees.
+  raise_right_arm_side_45: Raise the right arm to the side 45 degrees.
+  turn_head_left_90: Turn the head to the left 90 degrees.
+  turn_head_left_45: Turn the head to the left 45 degrees.
+  turn_head_right_90: Turn the head to the right 90 degrees.
+  turn_head_right_45: Turn the head to the right 45 degrees.
+  tilt_head_up:  Tilt the head upwards.
+  tilt_head_down: Tilt the head downwards.
+  lean_left_30: Lean the torso to the left 30 degrees.
+  lean_left_15: Lean the torso to the left 15 degrees.
+  lean_right_30: Lean the torso to the right 30 degrees.
+  lean_right_15: Lean the torso to the right 15 degrees.
+  lean_forward_45: Lean the torso forward 45 degrees.
+  lean_forward_20: Lean the torso forward 20 degrees.
+  lean_backward_45: Lean the torso backward 45 degrees.
+  lean_backward_20: Lean the torso backward 20 degrees.
+  angle_left_arm_90: Angle the left arm 90 degrees.
+  angle_left_arm_45: Angle the left arm 45 degrees.
+  angle_right_arm_90: Angle the right arm 90 degrees.
+  angle_right_arm_45: Angle the right arm 45 degrees.
+
+primitive_lib_picked1:
+  raise_arm_forward_left: Raise the left arm forward.
+  raise_arm_forward_right: Raise the right arm forward.
+  raise_arm_side_left: Raise the left arm to the side.
+  raise_arm_side_right: Raise the right arm to the side.
+  look_left: Turn the head to the left.
+  look_right: Turn the head to the right.
+  look_up: Tilt the head upwards.
+  look_down: Tilt the head downwards.
+  lean_left: Lean the torso to the left.
+  lean_right: Lean the torso to the right.
+  lean_forward: Lean the torso forward.
+  lean_backward: Lean the torso backward.
+  angle_arm_left: Angle the left arm.
+  angle_arm_right: Angle the right arm.
+
+
+
+idle_lib_picked:
+  - Zero
+
+parameter_ranges:
+  Anticipation:
+    min: 0.0
+    max: 0.2
+  Follow_Through:
+    min: 0.0
+    max: 3.0
+  Follow_Through_Data:
+    relation1:
+      source: "RElbowRoll"
+      target: "RShoulderRoll"
+      inverse: False
+      condition: "RElbowYaw"
+      lower_limit: -0.4
+      upper_limit: 0.4
+    relation2:
+      source: "RElbowRoll"
+      target: "RShoulderPitch"
+      inverse: False
+      condition: "RElbowYaw"
+      lower_limit: -2.0
+      upper_limit: -1.6
+    relation3:
+      source: "RElbowRoll"
+      target: "RShoulderPitch"
+      inverse: False
+      condition: "RElbowYaw"
+      lower_limit: 1.6
+      upper_limit: 2.0
+  Arcs:
+    min: -5
+    max: 10
+  Timing:
+    min: 0.5
+    max: 2.0
+  Exaggeration:
+    min: 0.5
+    max: 1.5
