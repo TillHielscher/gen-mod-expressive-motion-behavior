@@ -90,7 +90,7 @@ class LLAGTimelineBlock:
             with open(idle_yaml_path, 'r') as yaml_file:
                 yaml_data = yaml.safe_load(yaml_file)
 
-            idle_names = yaml_data.get("idle_lib_picked", [])
+            idle_names = yaml_data.get("idle_lib", [])
             if not idle_names:
                 raise ValueError("No 'primitive_lib_idle' list found in the YAML file.")
 

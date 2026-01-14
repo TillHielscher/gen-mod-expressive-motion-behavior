@@ -63,7 +63,7 @@ class LLAGPlanner:
             input_data = PlanWithContextInput(
                 context=str(context),
                 robot_capabilities=self.robot_data["capabilities"],
-                available_motion_primitives=self.robot_data["primitive_lib_picked"],
+                available_motion_primitives=self.robot_data["primitive_lib"],
                 principles=self.prompt_data["principles"]
             )
             
@@ -106,7 +106,7 @@ class LLAGPlanner:
         input_data = ContextToSequenceInput(
             context=str(context),
             robot_capabilities=self.robot_data["capabilities"],
-            available_motion_primitives=self.robot_data["primitive_lib_picked"]
+            available_motion_primitives=self.robot_data["primitive_lib"]
         )
         system_prompt = self.prompt_data["context_to_sequence"]
         result = self.call_llm_with_schema(system_prompt, input_data.model_dump(), ContextToSequenceOutput)
@@ -159,7 +159,7 @@ class LLAGPlanner:
         input_data = PlanWithContextInput(
             context=str(context),
             robot_capabilities=self.robot_data["capabilities"],
-            available_motion_primitives=self.robot_data["primitive_lib_picked"],
+            available_motion_primitives=self.robot_data["primitive_lib"],
             principles=self.prompt_data["principles"]
         )
 
@@ -178,7 +178,7 @@ class LLAGPlanner:
         input_data = ContextToSequenceAndAnimationDescriptionInput(
             context=str(context),
             robot_capabilities=self.robot_data["capabilities"],
-            available_motion_primitives=self.robot_data["primitive_lib_picked"]
+            available_motion_primitives=self.robot_data["primitive_lib"]
         )
         system_prompt = self.prompt_data["context_to_sequence_and_animation_description"]
         if str(context) == "image":
@@ -450,7 +450,7 @@ class LLAGPlanner:
         input_data = PlanWithContextInput(
             context=textual_context,
             robot_capabilities=self.robot_data["capabilities"],
-            available_motion_primitives=self.robot_data["primitive_lib_picked"],
+            available_motion_primitives=self.robot_data["primitive_lib"],
             principles=self.prompt_data["principles"]
         )
 
