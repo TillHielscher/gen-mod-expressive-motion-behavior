@@ -48,6 +48,20 @@ Default standing pose (radians):
 
 The Go2 uses its URDF file located at `robot_go2_description/go2_description.urdf` for visualization.
 
+### Floating-Base Visualization
+
+**Problem:** Standard URDF visualization fixes the robot's base (torso) in space and moves the legs. For a quadruped, this is physically incorrect - the feet should stay planted on the ground while the torso moves.
+
+**Solution:** The Go2Robot class implements floating-base visualization:
+1. Computes forward kinematics to determine foot positions
+2. Tracks reference foot positions from the initial pose
+3. Calculates the base displacement needed to keep feet planted
+4. Updates the visualization base frame to compensate
+
+This creates realistic motion where the feet appear planted and the torso moves naturally, matching real quadruped locomotion.
+
+**Note:** This feature is Go2-specific and doesn't affect fixed-base robots (Pepper, Gen3 Lite) which remain backward compatible.
+
 ## Converting Trajectories to Primitives
 
 Raw trajectory files from `data/*.txt` need to be converted to DMP format:

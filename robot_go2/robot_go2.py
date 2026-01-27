@@ -11,6 +11,9 @@ import sys
 import yaml
 import numpy as np
 from pathlib import Path
+from yourdfpy import URDF
+from scipy.spatial.transform import Rotation
+from scipy.optimize import minimize
 
 # Add parent directory to path to import robot_base
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -56,12 +59,14 @@ class Go2Robot(RobotBase):
     # Mapping from joint names to indices
     JOINT_NAME_TO_IDX = {name: idx for idx, name in enumerate(JOINT_NAMES)}
     
-    def __init__(self, robot_dir="robot_go2"):
+    def __init__(self, robot_dir="robot_go2", enable_floating_base=True):
         """
         Initialize Go2 robot.
         
         Args:
             robot_dir: Path to the Go2 robot configuration directory
+            enable_floating_base: If True, compute base transforms to keep feet planted (default).
+                                 If False, use standard fixed-base visualization.
         """
         super().__init__(robot_dir)
         # URDF path can be overridden, but defaults to description folder inside robot directory
@@ -69,6 +74,25 @@ class Go2Robot(RobotBase):
             'urdf_path',
             str(self.robot_dir / 'robot_go2_description' / 'go2_description.urdf')
         )
+        
+        # Floating base visualization - enabled by default for quadrupeds
+        self.enable_floating_base = enable_floating_base
+        
+        # Load URDF for FK computation (only if floating base enabled)
+        self._urdf = None
+        if self.enable_floating_base:
+            self._load_urdf()
+        
+        # Foot link names in URDF
+        self.foot_links = ["FL_foot", "FR_foot", "RL_foot", "RR_foot"]
+        
+    def _load_urdf(self):
+        """Load URDF for forward kinematics."""
+        try:
+            self._urdf = URDF.load(self.urdf_path)
+        except Exception as e:
+            print(f"Warning: Could not load URDF for FK computation: {e}")
+            self._urdf = None
         
     def translate_trajectory_to_internal(self, external_traj, use_zero=False):
         """
@@ -152,6 +176,173 @@ class Go2Robot(RobotBase):
         """Set custom URDF path."""
         self.urdf_path = path
     
+    def compute_foot_positions(self, joint_cfg_dict):
+        """Compute the world positions of all four feet given joint configuration.
+        
+        Args:
+            joint_cfg_dict: Dictionary mapping joint names to values (URDF order)
+            
+        Returns:
+            Dictionary mapping foot link names to [x, y, z] positions
+        """
+        if self._urdf is None:
+            return None
+        
+        try:
+            # Update URDF configuration
+            self._urdf.update_cfg(configuration=joint_cfg_dict)
+            
+            # Get transforms for foot links
+            foot_positions = {}
+            for foot_link in self.foot_links:
+                # Get 4x4 transform matrix for this link
+                transform = self._urdf.get_transform(foot_link)
+                # Extract translation (last column, first 3 rows)
+                foot_positions[foot_link] = transform[:3, 3]
+            
+            return foot_positions
+        except Exception as e:
+            print(f"Warning: FK computation failed: {e}")
+            return None
+    
+    def compute_base_transform(self, joint_array):
+        """Compute base transform to keep feet planted on ground.
+        
+        Solves the optimization problem:
+            minimize sum_i ||p_ground_i - (p_base + R_base * p_foot_i)||^2
+        
+        Where:
+        - p_ground_i: desired foot positions (initial ground contacts)
+        - p_foot_i: foot positions from FK (in base frame)
+        - p_base: base position (3 DOF)
+        - R_base: base orientation (3 DOF, parameterized as euler angles)
+        
+        Args:
+            joint_array: 12-dimensional array in URDF order
+            
+        Returns:
+            Tuple of (position, quaternion) or None if FK unavailable
+        """
+        if self._urdf is None:
+            return None
+        
+        # Create joint configuration dictionary for URDF FK
+        urdf_joint_names = [
+            "FL_hip_joint", "FL_thigh_joint", "FL_calf_joint",
+            "FR_hip_joint", "FR_thigh_joint", "FR_calf_joint",
+            "RL_hip_joint", "RL_thigh_joint", "RL_calf_joint",
+            "RR_hip_joint", "RR_thigh_joint", "RR_calf_joint",
+        ]
+        
+        joint_cfg = {name: joint_array[i] for i, name in enumerate(urdf_joint_names)}
+        
+        # Compute foot positions in base frame (FK from base link to foot links)
+        foot_positions_base_frame = self.compute_foot_positions(joint_cfg)
+        
+        if foot_positions_base_frame is None or len(foot_positions_base_frame) == 0:
+            return None
+        
+        # On first call: store the initial foot positions as ground contact points
+        if not hasattr(self, '_foot_ground_contacts'):
+            # Store foot positions, but adjust Z so the lowest foot is at ground (Z=0)
+            min_z = min(pos[2] for pos in foot_positions_base_frame.values())
+            z_offset = -min_z  # Lift everything so lowest foot is at Z=0
+            
+            self._foot_ground_contacts = {}
+            for foot, pos in foot_positions_base_frame.items():
+                adjusted_pos = pos.copy()
+                adjusted_pos[2] += z_offset  # Lift to ground plane
+                self._foot_ground_contacts[foot] = adjusted_pos
+            
+            print(f"Storing ground contact positions (lifted by {z_offset:.3f}m to ground plane):")
+            for foot, pos in self._foot_ground_contacts.items():
+                print(f"  {foot}: {pos}")
+            return None  # No adjustment needed on first frame
+        
+        # Prepare data for optimization
+        p_ground_list = []
+        p_foot_list = []
+        for foot_link in self.foot_links:
+            if foot_link in foot_positions_base_frame and foot_link in self._foot_ground_contacts:
+                p_ground_list.append(self._foot_ground_contacts[foot_link])
+                p_foot_list.append(foot_positions_base_frame[foot_link])
+        
+        if len(p_ground_list) == 0:
+            return None
+        
+        p_ground = np.array(p_ground_list)  # Shape: (n_feet, 3)
+        p_foot = np.array(p_foot_list)      # Shape: (n_feet, 3)
+        
+        # Optimization: find [tx, ty, tz, roll, pitch, yaw] that minimizes error
+        def objective(x):
+            """Compute total squared error for given base transform."""
+            tx, ty, tz, roll, pitch, yaw = x
+            p_base = np.array([tx, ty, tz])
+            
+            # Create rotation matrix from euler angles
+            R = Rotation.from_euler('xyz', [roll, pitch, yaw]).as_matrix()
+            
+            # Compute predicted foot positions: p_pred = p_base + R @ p_foot
+            total_error = 0.0
+            for i in range(len(p_ground)):
+                p_pred = p_base + R @ p_foot[i]
+                error = np.linalg.norm(p_ground[i] - p_pred)**2
+                total_error += error
+            
+            return total_error
+        
+        # Initial guess: translation only (from simple average), no rotation
+        p_base_init = np.mean(p_ground - p_foot, axis=0)
+        x0 = np.concatenate([p_base_init, [0.0, 0.0, 0.0]])
+        
+        # Optimize with bounds to keep rotation small (quadrupeds don't flip much)
+        bounds = [
+            (None, None), (None, None), (None, None),  # Translation unbounded
+            (-0.5, 0.5), (-0.5, 0.5), (-0.5, 0.5)      # Rotation limited to ~30 degrees
+        ]
+        
+        # Use tighter tolerances for more accurate solution
+        options = {
+            'maxiter': 1000,      # More iterations
+            'ftol': 1e-12,        # Tighter function tolerance
+            'gtol': 1e-10,        # Tighter gradient tolerance
+        }
+        
+        result = minimize(objective, x0, method='L-BFGS-B', bounds=bounds, options=options)
+        
+        if not result.success:
+            # Fall back to simple translation-only solution
+            print(f"Warning: Optimization failed at frame {getattr(self, '_debug_counter', 0)}: {result.message}")
+            position = p_base_init
+            quaternion = np.array([0.0, 0.0, 0.0, 1.0])
+        else:
+            tx, ty, tz, roll, pitch, yaw = result.x
+            position = np.array([tx, ty, tz])
+            
+            # Convert euler angles to quaternion
+            rot = Rotation.from_euler('xyz', [roll, pitch, yaw])
+            quat_wxyz = rot.as_quat()  # Returns [x, y, z, w]
+            quaternion = quat_wxyz  # Already in [qx, qy, qz, qw] format
+        
+        # Debug output
+        if hasattr(self, '_debug_counter'):
+            self._debug_counter += 1
+        else:
+            self._debug_counter = 0
+            print(f"\nFirst optimization result:")
+            print(f"  Position: {position}")
+            print(f"  Quaternion: {quaternion}")
+            if result.success:
+                print(f"  Final error: {result.fun:.6e}")
+                print(f"  Iterations: {result.nit}")
+        
+        if self._debug_counter > 0 and self._debug_counter % 100 == 0:
+            err_str = f"{result.fun:.6e}" if result.success else 'N/A'
+            iter_str = f"{result.nit}" if result.success else 'N/A'
+            print(f"Frame {self._debug_counter}: pos={position}, error={err_str}, iters={iter_str}")
+        
+        return (position, quaternion)
+    
     def prepare_real_robot_execution(self, session):
         """
         Prepare real robot for execution (Go2-specific).
@@ -193,8 +384,15 @@ class Go2Robot(RobotBase):
         # Convert from DMP order to URDF order
         converted_state = self.convert_joint_array_for_virtual(joint_positions)
         
-        # Update virtual session configuration
+        # Update virtual session with joint configuration
         virtual_session.set_cfg_array(converted_state)
+        
+        # Optionally compute base transform (experimental feature, disabled by default)
+        if self.enable_floating_base:
+            base_transform = self.compute_base_transform(converted_state)
+            if base_transform is not None:
+                position, quaternion = base_transform
+                virtual_session.set_base_transform(position, quaternion)
     
     @staticmethod
     def convert_joint_array_for_virtual(input_array):
@@ -235,9 +433,14 @@ def create_robot(robot_name):
         robot_name: Name of the robot (should be 'go2')
         
     Returns:
-        Go2Robot instance
+        Go2Robot instance with floating-base enabled by default
+        
+    Note:
+        Floating-base visualization is enabled for quadrupeds to show realistic motion
+        where feet stay planted and torso moves. Solves optimization problem:
+        p_base = p_ground - p_foot_in_base for each foot, averaged across all feet.
     """
-    return Go2Robot(robot_dir=f"robot_{robot_name}")
+    return Go2Robot(robot_dir=f"robot_{robot_name}", enable_floating_base=True)
 
 
 if __name__ == "__main__":

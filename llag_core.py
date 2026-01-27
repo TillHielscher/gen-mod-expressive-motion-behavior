@@ -316,5 +316,5 @@ class LLAGCore:
             self._safe_task(self.controller_loop(), "controller_loop"),
             self._safe_task(self.context_listener(), "context_listener"),
             self._safe_task(self.planner_trigger_loop(), "planner_trigger_loop"),
-            self._safe_task(self.rt_data_handler(), "rt_data_handler"),
+            #self._safe_task(self.rt_data_handler(), "rt_data_handler"),
         )

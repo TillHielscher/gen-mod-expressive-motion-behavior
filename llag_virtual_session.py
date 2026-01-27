@@ -263,6 +263,31 @@ class VirtualSession:
         """
         self.viser_urdf.update_cfg(np.array(values))
     
+    def set_base_transform(self, position: np.ndarray, quaternion: np.ndarray):
+        """Set the base transform for floating-base robots.
+        
+        This updates the root frame of the URDF visualization to move the entire
+        robot in space. Useful for quadrupeds where we want feet planted and
+        torso moving, rather than torso fixed and feet moving.
+        
+        Args:
+            position: [x, y, z] translation in meters
+            quaternion: [qx, qy, qz, qw] orientation quaternion
+        """
+        # ViserUrdf stores the root frame as _visual_root_frame
+        # Viser uses wxyz format for quaternions
+        wxyz = np.array([quaternion[3], quaternion[0], quaternion[1], quaternion[2]])
+        
+        # Update the root frame if it exists
+        if hasattr(self.viser_urdf, '_visual_root_frame') and self.viser_urdf._visual_root_frame is not None:
+            self.viser_urdf._visual_root_frame.position = tuple(position)
+            self.viser_urdf._visual_root_frame.wxyz = tuple(wxyz)
+        
+        # Also update collision frame if it exists
+        if hasattr(self.viser_urdf, '_collision_root_frame') and self.viser_urdf._collision_root_frame is not None:
+            self.viser_urdf._collision_root_frame.position = tuple(position)
+            self.viser_urdf._collision_root_frame.wxyz = tuple(wxyz)
+    
     def wait_for_client(self, timeout: Optional[float] = None, poll_interval: float = 0.5):
         """
         Wait for at least one client to connect to the Viser server.

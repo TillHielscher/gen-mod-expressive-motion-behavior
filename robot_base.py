@@ -169,3 +169,20 @@ class RobotBase(ABC):
     def get_robot_description_path(self):
         """Get path to robot description YAML file."""
         return str(self.robot_dir / f"{self.robot_dir.name}.yaml")
+    
+    def compute_base_transform(self, joint_array):
+        """Compute base transform for floating-base robots (optional).
+        
+        For fixed-base robots (arms, humanoids), return None.
+        For floating-base robots (quadrupeds), compute the base position/orientation
+        needed to keep feet planted on the ground.
+        
+        Args:
+            joint_array: Robot-specific joint configuration
+            
+        Returns:
+            Tuple of (position, quaternion) or None for fixed-base robots
+            position: [x, y, z] translation
+            quaternion: [qx, qy, qz, qw] orientation
+        """
+        return None
