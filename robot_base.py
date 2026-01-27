@@ -35,9 +35,17 @@ class RobotBase(ABC):
         
     def _load_config(self):
         """Load the robot configuration from YAML file."""
-        config_path = self.robot_dir / f"{self.robot_dir.name}.yaml"
+        # Try robot_data.yaml first (standard name), then fall back to robot_{name}.yaml
+        config_path = self.robot_dir / "robot_data.yaml"
         if not config_path.exists():
-            raise FileNotFoundError(f"Robot config not found at {config_path}")
+            config_path = self.robot_dir / f"{self.robot_dir.name}.yaml"
+        
+        if not config_path.exists():
+            raise FileNotFoundError(
+                f"Robot config not found. Expected either:\n"
+                f"  - {self.robot_dir}/robot_data.yaml (recommended)\n"
+                f"  - {self.robot_dir}/{self.robot_dir.name}.yaml"
+            )
         
         with open(config_path, 'r') as file:
             return yaml.safe_load(file)
@@ -131,7 +139,27 @@ class RobotBase(ABC):
     
     def get_primitive_path(self):
         """Get path to saved primitives."""
-        return str(self.robot_dir / "primitive_saved")
+        # Check if primitives path is specified in config
+        if 'primitives_path' in self.config:
+            return self.config['primitives_path']
+        
+        # Check for new naming convention inside robot directory (robot_name_primitives)
+        new_path_inside = self.robot_dir / f"{self.robot_dir.name}_primitives"
+        if new_path_inside.exists():
+            return str(new_path_inside)
+        
+        # Check for new naming convention at workspace root
+        new_path_root = Path(f"{self.robot_dir.name}_primitives")
+        if new_path_root.exists():
+            return str(new_path_root)
+        
+        # Fall back to old location inside robot directory
+        old_path = self.robot_dir / "primitive_saved"
+        if old_path.exists():
+            return str(old_path)
+        
+        # If none exist, return the new path inside robot dir as default
+        return str(new_path_inside)
     
     def get_urdf_path(self):
         """Get path to URDF file for this robot."""

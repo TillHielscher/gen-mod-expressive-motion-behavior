@@ -7,7 +7,7 @@ import logging
 import animation_dmp
 
 class LLAGTimelineBlock:
-    def __init__(self, name_identifier, context_params=None, primitive_path="robot_pepper/primitive_saved", idle_data_yaml_path="robot_pepper/robot_data.yaml"):
+    def __init__(self, name_identifier, context_params=None, primitive_path="robot_pepper_primitives", idle_data_yaml_path="robot_pepper/robot_data.yaml"):
         self.name_identifier = name_identifier
         self.dmp = self.load_save_from_folder(primitive_path, name_identifier, idle_yaml_path=idle_data_yaml_path)
         self.dmp.init_state()

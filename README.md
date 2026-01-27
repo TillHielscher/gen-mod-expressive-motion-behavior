@@ -8,32 +8,47 @@ Install required dependencies:
 
 ## Configuration
 
-The system is configured via `config.yaml`. Edit this file to customize the robot and system behavior.
+The system is configured via `config.yaml`. This single file controls all aspects of the system.
 
 ### Configuration Options
 
-#### Robot Selection
-Set the `robot` field to one of: `pepper`, `go2`, `franka`, or `custom`
-
-#### Operation Modes
-- `use_real_robot`: Connect to physical robot hardware (currently Pepper only)
-- `use_virtual_robot`: Enable 3D visualization of robot movements
-- `short_pipeline`: Use faster planning pipeline (recommended)
-- `modulate`: Enable animation modulation for expressive motion
+- `robot`: Robot name (e.g., `pepper`, `go2`, `franka`)
+  - Must match the directory structure: `robot_{name}/robot_{name}.py`
+- `use_real_robot`: Connect to physical robot hardware
+- `use_virtual_robot`: Enable 3D visualization
+- `short_pipeline`: Use faster planning pipeline
+- `modulate`: Enable expressive animation modulation
 - `debug`: Enable detailed logging
-
-#### Paths
 - `prompt_data_path`: Path to LLM prompt configuration
 
-#### Custom Robot
-When using `robot: custom`, configure:
-- `urdf_path`: Path to robot URDF file
-- `primitive_lib_path`: Path to motion primitive library
-- `robot_description_path`: Path to robot capabilities YAML
+### Adding a New Robot
 
-### Example Configurations
+To add a new robot (e.g., "myrobot"):
 
-**Default (Pepper robot with visualization):**
+1. Create directory: `robot_myrobot/`
+2. Create file: `robot_myrobot/robot_myrobot.py`
+3. Implement:
+   - A robot class inheriting from `RobotBase`
+   - A `create_robot(robot_name)` function that returns an instance
+4. Add config file: `robot_myrobot/robot_data.yaml` (or `robot_myrobot.yaml`)
+5. Create primitives directory: `robot_myrobot/robot_myrobot_primitives/`
+6. Add motion primitives in DMP format (`.json` + `_weights.npy` pairs)
+7. Set `robot: myrobot` in `config.yaml`
+
+That's it! The system will automatically discover and load your robot.
+
+### Available Robots
+
+- **pepper** - Pepper humanoid robot (SoftBank Robotics)
+  - Full-body gestures with arms, head, and torso
+  - URDF-based visualization
+  
+- **gen3_lite** - Kinova Gen3 Lite 7-DOF robotic arm
+  - Expressive arm gestures and manipulation
+  - Viser-based visualization (no URDF needed)
+
+### Example Configuration
+
 ```yaml
 robot: pepper
 use_real_robot: false
@@ -41,30 +56,14 @@ use_virtual_robot: true
 short_pipeline: true
 modulate: true
 debug: false
-```
-
-**Debug mode with real Pepper robot:**
-```yaml
-robot: pepper
-use_real_robot: true
-use_virtual_robot: true
-short_pipeline: true
-modulate: true
-debug: true
-```
-
-**Go2 quadruped robot:**
-```yaml
-robot: go2
-use_real_robot: false
-use_virtual_robot: true
+prompt_data_path: "prompts_v4.yaml"
 ```
 
 ## Usage
 
-Run the system with your configured settings:
+Simply run:
 ```bash
 python main.py
 ```
 
-The system will load configuration from `config.yaml` automatically.
+The system automatically loads your configuration and initializes the appropriate robot.

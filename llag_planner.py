@@ -120,7 +120,13 @@ class LLAGPlanner:
 
         timeline_block_list = []
         for primitive in plan:
-            timeline_block_list.append(LLAGTimelineBlock(primitive))
+            timeline_block_list.append(
+                LLAGTimelineBlock(
+                    primitive, 
+                    primitive_path=self.robot.get_primitive_path(),
+                    idle_data_yaml_path=self.robot.get_robot_description_path()
+                )
+            )
 
         return timeline_block_list, plan
 
@@ -196,7 +202,13 @@ class LLAGPlanner:
 
         timeline_block_list = []
         for primitive in plan:
-            timeline_block_list.append(LLAGTimelineBlock(primitive))
+            timeline_block_list.append(
+                LLAGTimelineBlock(
+                    primitive, 
+                    primitive_path=self.robot.get_primitive_path(),
+                    idle_data_yaml_path=self.robot.get_robot_description_path()
+                )
+            )
 
         #logging.info(plan)
 

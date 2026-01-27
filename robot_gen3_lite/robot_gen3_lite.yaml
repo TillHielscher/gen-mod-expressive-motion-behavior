@@ -1,0 +1,65 @@
+capabilities: |
+  Robotic Arm: A 7-DOF Kinova Gen3 Lite robotic arm with high precision and dexterity.
+  The arm can perform various manipulation tasks, gestures, and expressive movements.
+  Joint Configuration: 7 revolute joints providing flexible positioning and orientation control.
+
+primitive_lib:
+  wave_arm: Wave the arm in a welcoming gesture.
+  point_right: Point to the right with the arm extended.
+  indicate_right: Subtly indicate direction to the right.
+  sway_joyful: Sway the arm joyfully to express positive mood.
+  default_to_zero: Return to the default position smoothly.
+  zero_to_default: Move from zero position to the default pose.
+
+idle_lib:
+  - default_to_zero
+
+idle_lib_additions:
+  - default_to_zero
+  - zero_to_default
+
+parameter_ranges:
+  Anticipation:
+    min: 0.0
+    max: 0.4
+  Follow_Through:
+    min: 0.0
+    max: 5.0
+  Follow_Through_Data:
+    relation1:
+      target: joint_5
+      source: joint_3
+      inverse: True
+      condition: joint_4
+      lower_limit: -1.8871859296482412
+      upper_limit: -1.2624623115577889
+    relation2:
+      target: joint_5
+      source: joint_3
+      inverse: True
+      condition: joint_4
+      lower_limit: 1.262462311557789
+      upper_limit: 1.8871859296482416
+    relation3:
+      target: joint_6
+      source: joint_4
+      inverse: False
+      condition: joint_5
+      lower_limit: -0.297035175879397
+      upper_limit: 0.297035175879397
+    relation4:
+      target: joint_3
+      source: joint_2
+      inverse: True
+      condition: None
+      lower_limit: None
+      upper_limit: None
+  Arcs:
+    min: -5
+    max: 10
+  Timing:
+    min: 0.5
+    max: 1.75
+  Exaggeration:
+    min: 0.25
+    max: 1.5

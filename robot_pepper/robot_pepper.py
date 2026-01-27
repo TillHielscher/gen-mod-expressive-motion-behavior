@@ -75,7 +75,11 @@ class PepperRobot(RobotBase):
             robot_dir: Path to the Pepper robot configuration directory
         """
         super().__init__(robot_dir)
-        self.urdf_path = "pepper-toolbox-main/src/peppertoolbox/urdf/pepper_pruned.urdf"
+        # URDF path can be overridden, but defaults to description folder inside robot directory
+        self.urdf_path = self.config.get(
+            'urdf_path',
+            str(self.robot_dir / 'robot_pepper_description' / 'robot_pepper.urdf')
+        )
         
     def translate_trajectory_to_internal(self, pepper_traj, use_zero=False):
         """
@@ -252,32 +256,17 @@ class PepperRobot(RobotBase):
         return input_array[target_indices]
 
 
-# Factory function to create robot instances
-def create_robot(robot_name, robot_dir=None):
+def create_robot(robot_name):
     """
-    Factory function to create robot instances.
+    Factory function to create a Pepper robot instance.
     
     Args:
-        robot_name: Name of the robot (e.g., 'pepper', 'go2', 'franka')
-        robot_dir: Optional custom robot directory path
+        robot_name: Name of the robot (should be 'pepper')
         
     Returns:
-        Robot instance
+        PepperRobot instance
     """
-    if robot_dir is None:
-        robot_dir = f"robot_{robot_name}"
-    
-    robot_classes = {
-        'pepper': PepperRobot,
-        # Future robots can be added here:
-        # 'go2': Go2Robot,
-        # 'franka': FrankaRobot,
-    }
-    
-    if robot_name not in robot_classes:
-        raise ValueError(f"Unknown robot: {robot_name}. Available: {list(robot_classes.keys())}")
-    
-    return robot_classes[robot_name](robot_dir)
+    return PepperRobot(robot_dir=f"robot_{robot_name}")
 
 
 if __name__ == "__main__":
