@@ -10,44 +10,73 @@ import numpy as np
 import animation_dmp
 from pathlib import Path
 
-# Define trajectory files to convert
-trajectories = {
-    "point_right": "data/point_right.txt",
-    "tilt_left": "data/tilt_left.txt",
-}
 
-def convert_trajectory_to_dmp(input_file, output_name, n_basis=100, hz=60):
+def go2_trajectory_to_demo(trajectory_path: Path, sample_dt=1 / 60):
     """
-    Convert a raw trajectory file to DMP format.
+    Load and resample Go2 trajectory data.
     
     Args:
-        input_file: Path to input .txt file
+        trajectory_path: Path to directory containing q.txt and tick.txt
+        sample_dt: Target sample time in seconds (default: 1/60)
+        
+    Returns:
+        Dictionary with resampled q and t arrays
+    """
+    q = np.loadtxt(trajectory_path / "q.txt", dtype=np.float32)
+    ticks = np.loadtxt(trajectory_path / "tick.txt", dtype=np.float32)
+
+    print(f"Total number of samples {len(ticks)}")
+
+    # ticks is ms
+    ticks_sec = ticks / 1000.0
+
+    t_min = ticks_sec[0]
+    t_max = ticks_sec[-1]
+    desired_times = np.arange(t_min, t_max, sample_dt)
+
+    indices = np.searchsorted(ticks_sec, desired_times)
+    indices = np.clip(indices, 0, len(ticks_sec) - 1)
+
+    print(f"Subsampled to {len(indices)} samples")
+
+    return {"q": q[indices], "t": desired_times}
+
+
+# Define trajectory directories to convert (now using q.txt + tick.txt format)
+trajectory_dirs = {
+    "point_right": "data/point_right",
+    "tilt_left": "data/tilt_left",
+}
+
+
+def convert_demo_dict_to_dmp(demo_dict, output_name, n_basis=100):
+    """
+    Convert a demo dictionary (from go2_trajectory_to_demo) to DMP format.
+    
+    Args:
+        demo_dict: Dictionary with keys 'q', 't' from go2_trajectory_to_demo
         output_name: Name for output DMP (without extension)
         n_basis: Number of basis functions
-        hz: Sampling frequency (estimated from data)
     """
-    print(f"Converting {input_file} -> {output_name}")
+    print(f"Converting demo dict -> {output_name}")
     
-    # Load trajectory - Go2 has 12 joints per timestep (4 legs × 3 joints)
-    data = np.loadtxt(input_file)
+    # Extract ONLY the joint positions (q)
+    q = demo_dict["q"]
+    t = demo_dict["t"]
     
-    # The data appears to be in format: [timesteps, 12 values per timestep]
-    # Reshape if needed
-    if len(data.shape) == 1:
-        # Single row, reshape
-        num_joints = 12
-        data = data.reshape(-1, num_joints)
-    elif data.shape[1] != 12:
-        # May need to extract 12 values per row
-        print(f"  Warning: Expected 12 joints, got {data.shape[1]} columns")
-        if data.shape[1] % 12 == 0:
-            # Might be multiple poses per row
-            data = data.reshape(-1, 12)
+    print(f"  Joint positions shape: {q.shape}")
+    print(f"  Number of timesteps: {len(t)}")
     
-    print(f"  Trajectory shape: {data.shape}")
+    # Calculate dt from time array
+    dt = np.mean(np.diff(t))
+    print(f"  Average dt: {dt:.6f} seconds ({1/dt:.1f} Hz)")
     
-    # Create DMP
-    dmp = animation_dmp.DMP(data, n_weights_dim=n_basis, dt=1/hz)
+    # Verify we have 12 joints
+    if q.shape[1] != 12:
+        raise ValueError(f"Expected 12 joints, got {q.shape[1]}")
+    
+    # Create DMP using ONLY joint positions
+    dmp = animation_dmp.DMP(q, n_weights_dim=n_basis, dt=dt)
     
     # Save DMP
     output_path = Path("robot_go2_primitives") / output_name
@@ -56,23 +85,38 @@ def convert_trajectory_to_dmp(input_file, output_name, n_basis=100, hz=60):
 
 
 def main():
-    """Convert all trajectories."""
+    """Convert all trajectories using the demo format."""
     print("Converting Go2 trajectories to DMP format...")
     print("=" * 60)
     
-    for name, input_file in trajectories.items():
-        input_path = Path(input_file)
-        if input_path.exists():
-            try:
-                convert_trajectory_to_dmp(input_file, name)
-                print()
-            except Exception as e:
-                print(f"  ERROR: {e}")
-                import traceback
-                traceback.print_exc()
-                print()
-        else:
-            print(f"SKIPPING {name}: File not found at {input_file}")
+    for name, traj_dir in trajectory_dirs.items():
+        traj_path = Path(traj_dir)
+        
+        # Check if directory exists and has required files
+        q_file = traj_path / "q.txt"
+        tick_file = traj_path / "tick.txt"
+        
+        if not traj_path.exists():
+            print(f"SKIPPING {name}: Directory not found at {traj_path}")
+            print()
+            continue
+            
+        if not q_file.exists() or not tick_file.exists():
+            print(f"SKIPPING {name}: Missing q.txt or tick.txt in {traj_path}")
+            print()
+            continue
+        
+        try:
+            # Load and resample trajectory
+            demo = go2_trajectory_to_demo(traj_path, sample_dt=1/60)
+            
+            # Convert to DMP
+            convert_demo_dict_to_dmp(demo, name, n_basis=100)
+            print()
+        except Exception as e:
+            print(f"  ERROR: {e}")
+            import traceback
+            traceback.print_exc()
             print()
     
     print("=" * 60)

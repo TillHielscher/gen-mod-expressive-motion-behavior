@@ -23,29 +23,29 @@ parameter_ranges:
     max: 3.0
   Follow_Through_Data:
     relation1:
-      target: FL_calf_joint
-      source: FL_thigh_joint
-      inverse: True
-      condition: None
-      lower_limit: None
-      upper_limit: None
-    relation2:
       target: FR_calf_joint
       source: FR_thigh_joint
       inverse: True
       condition: None
       lower_limit: None
       upper_limit: None
+    relation2:
+      target: FL_calf_joint
+      source: FL_thigh_joint
+      inverse: True
+      condition: None
+      lower_limit: None
+      upper_limit: None
     relation3:
-      target: RL_calf_joint
-      source: RL_thigh_joint
+      target: RR_calf_joint
+      source: RR_thigh_joint
       inverse: True
       condition: None
       lower_limit: None
       upper_limit: None
     relation4:
-      target: RR_calf_joint
-      source: RR_thigh_joint
+      target: RL_calf_joint
+      source: RL_thigh_joint
       inverse: True
       condition: None
       lower_limit: None

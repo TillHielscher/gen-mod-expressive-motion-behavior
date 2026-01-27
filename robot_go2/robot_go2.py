@@ -26,29 +26,31 @@ class Go2Robot(RobotBase):
     """
     
     # Go2's default standing joint angles (in radians)
-    # Format: [FL_hip, FL_thigh, FL_calf, FR_hip, FR_thigh, FR_calf, 
-    #          RL_hip, RL_thigh, RL_calf, RR_hip, RR_thigh, RR_calf]
+    # Format: [FR_hip, FR_thigh, FR_calf, FL_hip, FL_thigh, FL_calf, 
+    #          RR_hip, RR_thigh, RR_calf, RL_hip, RL_thigh, RL_calf]
+    # Matches DMP ordering: FR_0-2, FL_0-2, RR_0-2, RL_0-2
     DEFAULT_JOINT_ANGLES = np.array([
-        0.0, 0.78, -1.40,  # Front Left
-        0.0, 0.78, -1.41,  # Front Right
-        0.0, 0.81, -1.45,  # Rear Left
-        0.09, 0.78, -1.39  # Rear Right
+        0.0, 0.78, -1.41,  # Front Right (FR)
+        0.0, 0.78, -1.40,  # Front Left (FL)
+        0.09, 0.78, -1.39, # Rear Right (RR)
+        0.0, 0.81, -1.45   # Rear Left (RL)
     ])
     
     # Joint names for the 12-DOF quadruped
+    # Order matches DMP: FR, FL, RR, RL
     JOINT_NAMES = [
-        "FL_hip_joint",   # Front Left hip
-        "FL_thigh_joint", # Front Left thigh
-        "FL_calf_joint",  # Front Left calf
-        "FR_hip_joint",   # Front Right hip
-        "FR_thigh_joint", # Front Right thigh
-        "FR_calf_joint",  # Front Right calf
-        "RL_hip_joint",   # Rear Left hip
-        "RL_thigh_joint", # Rear Left thigh
-        "RL_calf_joint",  # Rear Left calf
-        "RR_hip_joint",   # Rear Right hip
-        "RR_thigh_joint", # Rear Right thigh
-        "RR_calf_joint",  # Rear Right calf
+        "FR_hip_joint",   # FR_0 -> 0
+        "FR_thigh_joint", # FR_1 -> 1
+        "FR_calf_joint",  # FR_2 -> 2
+        "FL_hip_joint",   # FL_0 -> 3
+        "FL_thigh_joint", # FL_1 -> 4
+        "FL_calf_joint",  # FL_2 -> 5
+        "RR_hip_joint",   # RR_0 -> 6
+        "RR_thigh_joint", # RR_1 -> 7
+        "RR_calf_joint",  # RR_2 -> 8
+        "RL_hip_joint",   # RL_0 -> 9
+        "RL_thigh_joint", # RL_1 -> 10
+        "RL_calf_joint",  # RL_2 -> 11
     ]
     
     # Mapping from joint names to indices
@@ -185,11 +187,44 @@ class Go2Robot(RobotBase):
             virtual_session: Virtual session for visualization
             state: Joint state array to execute (48-dimensional internal format)
         """
-        # Extract 12-DOF joint positions from internal 48-dim format
+        # Extract 12-DOF joint positions from internal format
         joint_positions = state[:12]
         
+        # Convert from DMP order to URDF order
+        converted_state = self.convert_joint_array_for_virtual(joint_positions)
+        
         # Update virtual session configuration
-        virtual_session.set_cfg_array(joint_positions)
+        virtual_session.set_cfg_array(converted_state)
+    
+    @staticmethod
+    def convert_joint_array_for_virtual(input_array):
+        """
+        Convert 12-dimensional DMP joint array to Go2's URDF joint order.
+        
+        The DMP uses order: FR, FL, RR, RL (indices 0-11)
+        The URDF expects order: FL, FR, RL, RR (we need to determine this)
+        
+        Args:
+            input_array: 12-dimensional joint state array in DMP order
+            
+        Returns:
+            Array with joints reordered for Go2's virtual session (12 joints)
+        """
+        if len(input_array) != 12:
+            raise ValueError(f"Input array must have 12 elements, got {len(input_array)}")
+        
+        # DMP order: FR(0-2), FL(3-5), RR(6-8), RL(9-11)
+        # URDF order: FL(0-2), FR(3-5), RL(6-8), RR(9-11)
+        # Mapping: FL from 3-5, FR from 0-2, RL from 9-11, RR from 6-8
+        
+        reordered = np.array([
+            input_array[3], input_array[4], input_array[5],  # FL (hip, thigh, calf)
+            input_array[0], input_array[1], input_array[2],  # FR (hip, thigh, calf)
+            input_array[9], input_array[10], input_array[11], # RL (hip, thigh, calf)
+            input_array[6], input_array[7], input_array[8],   # RR (hip, thigh, calf)
+        ])
+        
+        return reordered
 
 
 def create_robot(robot_name):

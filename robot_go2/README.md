@@ -14,32 +14,34 @@ This directory contains the robot-specific implementation for the Unitree Go2 qu
 
 The Go2 has 12 revolute joints (4 legs × 3 joints per leg):
 
-**Front Left Leg (FL):**
-- FL_hip_joint
-- FL_thigh_joint
-- FL_calf_joint
+**DMP Joint Order (indices 0-11):**
 
 **Front Right Leg (FR):**
-- FR_hip_joint
-- FR_thigh_joint
-- FR_calf_joint
+- FR_hip_joint (FR_0 -> 0)
+- FR_thigh_joint (FR_1 -> 1)
+- FR_calf_joint (FR_2 -> 2)
 
-**Rear Left Leg (RL):**
-- RL_hip_joint
-- RL_thigh_joint
-- RL_calf_joint
+**Front Left Leg (FL):**
+- FL_hip_joint (FL_0 -> 3)
+- FL_thigh_joint (FL_1 -> 4)
+- FL_calf_joint (FL_2 -> 5)
 
 **Rear Right Leg (RR):**
-- RR_hip_joint
-- RR_thigh_joint
-- RR_calf_joint
+- RR_hip_joint (RR_0 -> 6)
+- RR_thigh_joint (RR_1 -> 7)
+- RR_calf_joint (RR_2 -> 8)
+
+**Rear Left Leg (RL):**
+- RL_hip_joint (RL_0 -> 9)
+- RL_thigh_joint (RL_1 -> 10)
+- RL_calf_joint (RL_2 -> 11)
 
 Default standing pose (radians):
 ```
-[0.0, 0.78, -1.40,   # FL
- 0.0, 0.78, -1.41,   # FR
- 0.0, 0.81, -1.45,   # RL
- 0.09, 0.78, -1.39]  # RR
+[0.0, 0.78, -1.41,   # FR
+ 0.0, 0.78, -1.40,   # FL
+ 0.09, 0.78, -1.39,  # RR
+ 0.0, 0.81, -1.45]   # RL
 ```
 
 ## Visualization
