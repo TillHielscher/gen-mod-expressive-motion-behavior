@@ -1,0 +1,61 @@
+capabilities: |
+  Quadruped Robot: A 12-DOF Unitree Go2 quadruped robot with agile locomotion capabilities.
+  The robot can perform expressive body movements, tilts, and gestures using its four legs.
+  Each leg has 3 joints (hip, thigh, calf) providing flexible body positioning and dynamic motions.
+
+primitive_lib:
+  point_right: Point or lean to the right with body tilt.
+  tilt_left: Tilt body to the left side.
+  stand_neutral: Return to neutral standing position.
+
+idle_lib:
+  - stand_neutral
+
+idle_lib_additions:
+  - stand_neutral
+
+parameter_ranges:
+  Anticipation:
+    min: 0.0
+    max: 0.4
+  Follow_Through:
+    min: 0.0
+    max: 3.0
+  Follow_Through_Data:
+    relation1:
+      target: FL_calf_joint
+      source: FL_thigh_joint
+      inverse: True
+      condition: None
+      lower_limit: None
+      upper_limit: None
+    relation2:
+      target: FR_calf_joint
+      source: FR_thigh_joint
+      inverse: True
+      condition: None
+      lower_limit: None
+      upper_limit: None
+    relation3:
+      target: RL_calf_joint
+      source: RL_thigh_joint
+      inverse: True
+      condition: None
+      lower_limit: None
+      upper_limit: None
+    relation4:
+      target: RR_calf_joint
+      source: RR_thigh_joint
+      inverse: True
+      condition: None
+      lower_limit: None
+      upper_limit: None
+  Arcs:
+    min: -5
+    max: 10
+  Timing:
+    min: 0.5
+    max: 1.75
+  Exaggeration:
+    min: 0.25
+    max: 1.5

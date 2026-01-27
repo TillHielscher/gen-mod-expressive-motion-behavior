@@ -42,10 +42,17 @@ That's it! The system will automatically discover and load your robot.
 - **pepper** - Pepper humanoid robot (SoftBank Robotics)
   - Full-body gestures with arms, head, and torso
   - URDF-based visualization
+  - 17 DOF (arms, head, torso, hands)
   
 - **gen3_lite** - Kinova Gen3 Lite 7-DOF robotic arm
   - Expressive arm gestures and manipulation
-  - Viser-based visualization (no URDF needed)
+  - URDF-based visualization
+  - 7 DOF robotic arm
+
+- **go2** - Unitree Go2 quadruped robot
+  - Expressive body movements and tilts
+  - URDF-based visualization
+  - 12 DOF (4 legs × 3 joints)
 
 ### Example Configuration
 
