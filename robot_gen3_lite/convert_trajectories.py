@@ -11,13 +11,16 @@ import animation_dmp
 from pathlib import Path
 
 # Define trajectory files to convert
+# trajectories = {
+#     "wave_arm": "../kinova_viser/wave_arm_120.txt",
+#     "sway_joyful": "../kinova_viser/sway_joyful_120.txt",
+#     "point_right": "../kinova_viser/point_right.txt",
+#     "indicate_right": "../kinova_viser/indicate_right_120.txt",
+#     "default_to_zero": "../kinova_viser/default_to_zero.txt",
+#     "zero_to_default": "../kinova_viser/zero_to_default.txt",
+# }
 trajectories = {
-    "wave_arm": "../kinova_viser/wave_arm_120.txt",
-    "sway_joyful": "../kinova_viser/sway_joyful_120.txt",
-    "point_right": "../kinova_viser/point_right.txt",
-    "indicate_right": "../kinova_viser/indicate_right_120.txt",
-    "default_to_zero": "../kinova_viser/default_to_zero.txt",
-    "zero_to_default": "../kinova_viser/zero_to_default.txt",
+    "default": "../kinova_viser/default.txt",
 }
 
 def convert_trajectory_to_dmp(input_file, output_name, n_basis=100, hz=120):

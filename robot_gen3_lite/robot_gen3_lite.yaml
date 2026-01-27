@@ -8,11 +8,9 @@ primitive_lib:
   point_right: Point to the right with the arm extended.
   indicate_right: Subtly indicate direction to the right.
   sway_joyful: Sway the arm joyfully to express positive mood.
-  default_to_zero: Return to the default position smoothly.
-  zero_to_default: Move from zero position to the default pose.
 
 idle_lib:
-  - default_to_zero
+  - default
 
 idle_lib_additions:
   - default_to_zero
@@ -21,10 +19,10 @@ idle_lib_additions:
 parameter_ranges:
   Anticipation:
     min: 0.0
-    max: 0.4
+    max: 0.1
   Follow_Through:
     min: 0.0
-    max: 5.0
+    max: 1.5
   Follow_Through_Data:
     relation1:
       target: joint_5
@@ -43,7 +41,7 @@ parameter_ranges:
     relation3:
       target: joint_6
       source: joint_4
-      inverse: False
+      inverse: True
       condition: joint_5
       lower_limit: -0.297035175879397
       upper_limit: 0.297035175879397
@@ -56,10 +54,10 @@ parameter_ranges:
       upper_limit: None
   Arcs:
     min: -5
-    max: 10
+    max: 5
   Timing:
     min: 0.5
     max: 1.75
   Exaggeration:
-    min: 0.25
-    max: 1.5
+    min: 0.9
+    max: 1.1

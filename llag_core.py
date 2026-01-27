@@ -189,7 +189,7 @@ class LLAGCore:
                                 follow_through_data_list.append(np.array([self.robot.get_joint_index(data["target"]), self.robot.get_joint_index(data["source"]), data["inverse"]]))
                             else:
                                 follow_through_data_list.append(np.array([self.robot.get_joint_index(data["target"]), self.robot.get_joint_index(data["source"]), data["inverse"], self.robot.get_joint_index(data["condition"]), data["lower_limit"], data["upper_limit"]]))
-                        block.dmp.set_principle_parameters(p_ant=animation["Anticipation"], p_follow=animation["Follow_Through"], p_arc=animation["Arcs"], p_slow=animation["Slow_In_Slow_Out"], p_progression=["fast", "fast", "fast"], p_time=animation["Timing"], p_exa=animation["Exaggeration"])#, p_follow_data=follow_through_data_list)
+                        block.dmp.set_principle_parameters(p_ant=animation["Anticipation"], p_follow=animation["Follow_Through"], p_arc=animation["Arcs"], p_slow=animation["Slow_In_Slow_Out"], p_progression=["fast", "fast", "fast"], p_time=animation["Timing"], p_exa=animation["Exaggeration"], p_follow_data=follow_through_data_list)
                     self.timeline.append_block(block)                
 
                 logging.info("[LLAGCore] New plan added to timeline.")
