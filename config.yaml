@@ -1,0 +1,37 @@
+# LLAG System Configuration
+# Configuration for Language-Guided Animation Generation System
+
+# Robot selection: pepper, go2, franka, or custom
+robot: pepper
+
+# Operation modes
+use_real_robot: false          # Use real robot hardware (currently only supports Pepper)
+use_virtual_robot: true        # Use virtual robot visualization
+
+# Pipeline configuration
+short_pipeline: true           # Use short planning pipeline (faster)
+modulate: true                 # Enable animation modulation
+debug: false                   # Enable debug logging
+
+# Paths
+prompt_data_path: "prompts_v4.yaml"
+
+# Custom robot configuration (only used when robot: custom)
+custom_robot:
+  urdf_path: "pepper-toolbox-main/src/peppertoolbox/urdf/pepper_pruned.urdf"
+  primitive_lib_path: "robot_pepper/primitive_saved"
+  robot_description_path: "robot_pepper/robot_data.yaml"
+
+# Robot-specific configurations
+robots:
+  pepper:
+    urdf_path: "pepper-toolbox-main/src/peppertoolbox/urdf/pepper_pruned.urdf"
+    robot_dir: "robot_pepper"
+  
+  go2:
+    urdf_path: "kinematic_analysis/go2_urdf/go2_description.urdf"
+    robot_dir: "robot_go2"
+  
+  franka:
+    urdf_path: "kinematic_analysis/franka_urdf/panda.urdf"
+    robot_dir: "robot_franka"

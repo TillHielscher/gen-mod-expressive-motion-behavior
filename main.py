@@ -1,228 +1,161 @@
 """
 Main entry point for the LLAG (Language-Guided Animation Generation) system.
 
-This version uses the robot-agnostic llag_virtual_session module.
+This version uses the robot-agnostic architecture with robot classes.
 """
 
 import asyncio
-import argparse
+import yaml
+from pathlib import Path
 from llag_core import LLAGCore
+from robot_pepper.robot_pepper import create_robot
 
 
-def create_pepper_core(args):
+def load_config(config_path: str = "config.yaml") -> dict:
+    """Load configuration from YAML file."""
+    config_file = Path(config_path)
+    if not config_file.exists():
+        raise FileNotFoundError(f"Configuration file not found: {config_path}")
+    
+    with open(config_file, 'r') as f:
+        config = yaml.safe_load(f)
+    
+    return config
+
+
+def create_pepper_core(config: dict):
     """Create LLAGCore configured for Pepper robot."""
+    robot = create_robot('pepper')
     return LLAGCore(
-        use_pepper=args.use_real_robot,
-        use_virtual_pepper=args.use_virtual,
+        robot=robot,
+        use_real_robot=config['use_real_robot'],
+        use_virtual_robot=config['use_virtual_robot'],
         console_log=True,
-        debug_log=args.debug,
-        short_pipeline=args.short_pipeline,
-        modulate=args.modulate,
-        primitive_lib_path="robot_pepper/primitive_saved",
-        robot_description_path="robot_pepper/robot_data.yaml",
-        prompt_data_path="prompts_v4.yaml",
-        urdf_path="pepper-toolbox-main/src/peppertoolbox/urdf/pepper_pruned.urdf"
+        debug_log=config['debug'],
+        short_pipeline=config['short_pipeline'],
+        modulate=config['modulate'],
+        prompt_data_path=config['prompt_data_path']
     )
 
 
-def create_go2_core(args):
+def create_go2_core(config: dict):
     """Create LLAGCore configured for Go2 quadruped robot."""
+    # TODO: Implement Go2Robot class
+    # robot = create_robot('go2')
+    # For now, use the old approach
+    from robot_pepper.robot_pepper import PepperRobot
+    
+    # Create a temporary robot class wrapper for Go2
+    class TempGo2Robot(PepperRobot):
+        def __init__(self):
+            # Don't call super().__init__() with default path
+            from pathlib import Path
+            self.robot_dir = Path(config['robots']['go2']['robot_dir'])
+            self.config = self._load_config()
+            self.urdf_path = config['robots']['go2']['urdf_path']
+    
+    robot = TempGo2Robot()
     return LLAGCore(
-        use_pepper=False,  # Go2 doesn't use pepper hardware
-        use_virtual_pepper=args.use_virtual,
+        robot=robot,
+        use_real_robot=False,
+        use_virtual_robot=config['use_virtual_robot'],
         console_log=True,
-        debug_log=args.debug,
-        short_pipeline=args.short_pipeline,
-        modulate=args.modulate,
-        primitive_lib_path="robot_go2/primitive_admp_picked",
-        robot_description_path="robot_go2/robot_data.yaml",
-        prompt_data_path="prompts_v4.yaml",
-        urdf_path="kinematic_analysis/go2_urdf/go2_description.urdf"
+        debug_log=config['debug'],
+        short_pipeline=config['short_pipeline'],
+        modulate=config['modulate'],
+        prompt_data_path=config['prompt_data_path']
     )
 
 
-def create_franka_core(args):
+def create_franka_core(config: dict):
     """Create LLAGCore configured for Franka robot."""
+    # TODO: Implement FrankaRobot class
+    # robot = create_robot('franka')
+    # For now, use the old approach
+    from robot_pepper.robot_pepper import PepperRobot
+    from pathlib import Path
+    
+    class TempFrankaRobot(PepperRobot):
+        def __init__(self):
+            self.robot_dir = Path(config['robots']['franka']['robot_dir'])
+            self.config = self._load_config()
+            self.urdf_path = config['robots']['franka']['urdf_path']
+    
+    robot = TempFrankaRobot()
     return LLAGCore(
-        use_pepper=False,  # Franka doesn't use pepper hardware
-        use_virtual_pepper=args.use_virtual,
+        robot=robot,
+        use_real_robot=False,
+        use_virtual_robot=config['use_virtual_robot'],
         console_log=True,
-        debug_log=args.debug,
-        short_pipeline=args.short_pipeline,
-        modulate=args.modulate,
-        primitive_lib_path="robot_franka/primitive_admp_picked",
-        robot_description_path="robot_franka/robot_data.yaml",
-        prompt_data_path="prompts_v4.yaml",
-        urdf_path="kinematic_analysis/franka_urdf/panda.urdf"
+        debug_log=config['debug'],
+        short_pipeline=config['short_pipeline'],
+        modulate=config['modulate'],
+        prompt_data_path=config['prompt_data_path']
     )
 
 
-def create_custom_core(args):
-    """Create LLAGCore with custom configuration from command line."""
+def create_custom_core(config: dict):
+    """Create LLAGCore with custom configuration from config file."""
+    from robot_pepper.robot_pepper import PepperRobot
+    from pathlib import Path
+    import os
+    
+    custom_config = config['custom_robot']
+    robot_dir = os.path.dirname(custom_config['robot_description_path'])
+    
+    class CustomRobot(PepperRobot):
+        def __init__(self, robot_dir_path, urdf):
+            self.robot_dir = Path(robot_dir_path)
+            self.config = self._load_config()
+            self.urdf_path = urdf
+    
+    robot = CustomRobot(robot_dir, custom_config['urdf_path'])
     return LLAGCore(
-        use_pepper=args.use_real_robot,
-        use_virtual_pepper=args.use_virtual,
+        robot=robot,
+        use_real_robot=config['use_real_robot'],
+        use_virtual_robot=config['use_virtual_robot'],
         console_log=True,
-        debug_log=args.debug,
-        short_pipeline=args.short_pipeline,
-        modulate=args.modulate,
-        primitive_lib_path=args.primitive_lib_path,
-        robot_description_path=args.robot_description_path,
-        prompt_data_path=args.prompt_data_path,
-        urdf_path=args.urdf_path
+        debug_log=config['debug'],
+        short_pipeline=config['short_pipeline'],
+        modulate=config['modulate'],
+        prompt_data_path=config['prompt_data_path']
     )
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description='LLAG - Language-Guided Animation Generation System',
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  # Run with Pepper robot (virtual visualization)
-  python main.py --robot pepper
-  
-  # Run with Go2 quadruped robot
-  python main.py --robot go2
-  
-  # Run with Franka robot
-  python main.py --robot franka
-  
-  # Run with custom robot configuration
-  python main.py --robot custom \\
-      --urdf-path path/to/robot.urdf \\
-      --primitive-lib robot_name/primitive_admp_picked \\
-      --robot-description robot_name/robot_data.yaml
-  
-  # Run with real Pepper hardware (requires connection)
-  python main.py --robot pepper --use-real-robot
-  
-  # Run in debug mode
-  python main.py --robot pepper --debug
-  
-        """
-    )
+    """Main entry point for the LLAG system."""
+    # Load configuration
+    config = load_config("config.yaml")
     
-    # Robot selection
-    parser.add_argument(
-        '--robot',
-        type=str,
-        default='pepper',
-        choices=['pepper', 'go2', 'franka', 'custom'],
-        help='Select which robot to use (default: pepper)'
-    )
+    robot_type = config['robot']
     
-    # Basic operation modes
-    parser.add_argument(
-        '--use-real-robot',
-        action='store_true',
-        help='Use real robot hardware (currently only supports Pepper)'
-    )
-    
-    parser.add_argument(
-        '--use-virtual',
-        action='store_true',
-        default=True,
-        help='Use virtual robot visualization (default: True)'
-    )
-    
-    parser.add_argument(
-        '--no-virtual',
-        action='store_false',
-        dest='use_virtual',
-        help='Disable virtual robot visualization'
-    )
-    
-    # Pipeline configuration
-    parser.add_argument(
-        '--short-pipeline',
-        action='store_true',
-        default=True,
-        help='Use short planning pipeline (default: True)'
-    )
-    
-    parser.add_argument(
-        '--long-pipeline',
-        action='store_false',
-        dest='short_pipeline',
-        help='Use long planning pipeline'
-    )
-    
-    parser.add_argument(
-        '--no-modulate',
-        action='store_false',
-        dest='modulate',
-        default=True,
-        help='Disable animation modulation'
-    )
-    
-    
-    # Debugging
-    parser.add_argument(
-        '--debug',
-        action='store_true',
-        help='Enable debug logging'
-    )
-    
-    # Custom robot configuration (used when --robot custom)
-    parser.add_argument(
-        '--urdf-path',
-        type=str,
-        default='pepper-toolbox-main/src/peppertoolbox/urdf/pepper_pruned.urdf',
-        help='Path to robot URDF file (for custom robot)'
-    )
-    
-    parser.add_argument(
-        '--primitive-lib-path',
-        type=str,
-        default='robot_pepper/primitive_saved',
-        dest='primitive_lib_path',
-        help='Path to primitive library (for custom robot)'
-    )
-    
-    parser.add_argument(
-        '--robot-description-path',
-        type=str,
-        default='robot_pepper/robot_data.yaml',
-        dest='robot_description_path',
-        help='Path to robot description YAML (for custom robot)'
-    )
-    
-    parser.add_argument(
-        '--prompt-data-path',
-        type=str,
-        default='prompts_v4.yaml',
-        dest='prompt_data_path',
-        help='Path to prompt data YAML'
-    )
-    
-    args = parser.parse_args()
-    
-    # Create appropriate core based on robot selection
+    # Print configuration summary
     print(f"=== Initializing LLAG System ===")
-    print(f"Robot: {args.robot}")
-    print(f"Virtual visualization: {args.use_virtual}")
-    print(f"Real robot: {args.use_real_robot}")
-    print(f"Pipeline: {'short' if args.short_pipeline else 'long'}")
-    print(f"Modulation: {args.modulate}")
-    print(f"Debug mode: {args.debug}")
+    print(f"Robot: {robot_type}")
+    print(f"Virtual visualization: {config['use_virtual_robot']}")
+    print(f"Real robot: {config['use_real_robot']}")
+    print(f"Pipeline: {'short' if config['short_pipeline'] else 'long'}")
+    print(f"Modulation: {config['modulate']}")
+    print(f"Debug mode: {config['debug']}")
     print()
     
-    if args.robot == 'pepper':
-        core = create_pepper_core(args)
-    elif args.robot == 'go2':
-        core = create_go2_core(args)
-    elif args.robot == 'franka':
-        core = create_franka_core(args)
-    elif args.robot == 'custom':
+    # Create appropriate core based on robot selection
+    if robot_type == 'pepper':
+        core = create_pepper_core(config)
+    elif robot_type == 'go2':
+        core = create_go2_core(config)
+    elif robot_type == 'franka':
+        core = create_franka_core(config)
+    elif robot_type == 'custom':
+        custom = config['custom_robot']
         print(f"Custom configuration:")
-        print(f"  URDF: {args.urdf_path}")
-        print(f"  Primitives: {args.primitive_lib_path}")
-        print(f"  Description: {args.robot_description_path}")
+        print(f"  URDF: {custom['urdf_path']}")
+        print(f"  Primitives: {custom['primitive_lib_path']}")
+        print(f"  Description: {custom['robot_description_path']}")
         print()
-        core = create_custom_core(args)
+        core = create_custom_core(config)
     else:
-        raise ValueError(f"Unknown robot type: {args.robot}")
+        raise ValueError(f"Unknown robot type: {robot_type}")
     
     # Run the system
     print("Starting LLAG system...")

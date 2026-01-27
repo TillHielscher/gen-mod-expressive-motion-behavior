@@ -22,11 +22,16 @@ llm_openai_api = True
 
 class LLAGPlanner:
 
-    def __init__(self, prompt_data_path="prompts_v4.yaml", robot_data_path="robot_pepper/robot_data.yaml"):
+    def __init__(self, robot, prompt_data_path="prompts_v4.yaml"):
+        """Initialize LLAGPlanner with a robot instance.
+        
+        Args:
+            robot: Robot instance that implements RobotBase
+            prompt_data_path: Path to prompt configuration YAML
+        """
         logging.info("Planner init")
+        self.robot = robot
         self.prompt_data = self.load_config(prompt_data_path)
-        #self.robot_data = self.load_config("robot_pepper/robot_data.yaml")
-        self.robot_data = self.load_config(robot_data_path)
         api_confirmation = input("Use OpenAI API? (y/n): ").strip().lower()
         if api_confirmation == 'y':
             # Check if API key is available
@@ -62,8 +67,8 @@ class LLAGPlanner:
             context = passed_context.get("context", 0)
             input_data = PlanWithContextInput(
                 context=str(context),
-                robot_capabilities=self.robot_data["capabilities"],
-                available_motion_primitives=self.robot_data["primitive_lib"],
+                robot_capabilities=self.robot.get_capabilities(),
+                available_motion_primitives=self.robot.get_primitive_lib(),
                 principles=self.prompt_data["principles"]
             )
             
@@ -105,8 +110,8 @@ class LLAGPlanner:
         # Step 1
         input_data = ContextToSequenceInput(
             context=str(context),
-            robot_capabilities=self.robot_data["capabilities"],
-            available_motion_primitives=self.robot_data["primitive_lib"]
+            robot_capabilities=self.robot.get_capabilities(),
+            available_motion_primitives=self.robot.get_primitive_lib()
         )
         system_prompt = self.prompt_data["context_to_sequence"]
         result = self.call_llm_with_schema(system_prompt, input_data.model_dump(), ContextToSequenceOutput)
@@ -158,8 +163,8 @@ class LLAGPlanner:
 
         input_data = PlanWithContextInput(
             context=str(context),
-            robot_capabilities=self.robot_data["capabilities"],
-            available_motion_primitives=self.robot_data["primitive_lib"],
+            robot_capabilities=self.robot.get_capabilities(),
+            available_motion_primitives=self.robot.get_primitive_lib(),
             principles=self.prompt_data["principles"]
         )
 
@@ -177,8 +182,8 @@ class LLAGPlanner:
         context = context.get("context", 0)
         input_data = ContextToSequenceAndAnimationDescriptionInput(
             context=str(context),
-            robot_capabilities=self.robot_data["capabilities"],
-            available_motion_primitives=self.robot_data["primitive_lib"]
+            robot_capabilities=self.robot.get_capabilities(),
+            available_motion_primitives=self.robot.get_primitive_lib()
         )
         system_prompt = self.prompt_data["context_to_sequence_and_animation_description"]
         if str(context) == "image":
@@ -221,8 +226,8 @@ class LLAGPlanner:
         mapped = {}
 
         # Include special specific fields directly
-        if "Follow_Through_Data" in self.robot_data["parameter_ranges"]:
-            mapped["Follow_Through_Data"] = self.robot_data["parameter_ranges"]["Follow_Through_Data"]
+        if "Follow_Through_Data" in self.robot.get_parameter_ranges():
+            mapped["Follow_Through_Data"] = self.robot.get_parameter_ranges()["Follow_Through_Data"]
 
         for key, value in animation_principle_description.items():
             if key not in self.prompt_data["principles"]:
@@ -241,12 +246,12 @@ class LLAGPlanner:
                 continue
 
             # --- Require presence in robot_data before mapping ---
-            if key not in self.robot_data["parameter_ranges"]:
+            if key not in self.robot.get_parameter_ranges():
                 raise KeyError(f"{key} not found in specific parameter ranges")
 
             gen_min, gen_max = self.prompt_data["principles"][key]["scale_range"]
-            spec_min = self.robot_data["parameter_ranges"][key]["min"]
-            spec_max = self.robot_data["parameter_ranges"][key]["max"]
+            spec_min = self.robot.get_parameter_ranges()[key]["min"]
+            spec_max = self.robot.get_parameter_ranges()[key]["max"]
 
             # --- Principle-specific mapping rules ---
             if key in ["Timing", "Exaggeration", "Arcs"]:
@@ -278,8 +283,8 @@ class LLAGPlanner:
             mapped["Timing_Pacing"] = self.prompt_data["principles"]["Timing_Pacing"]
 
         # Include special specific fields directly
-        if "Follow_Through_Data" in self.robot_data["parameter_ranges"]:
-            mapped["Follow_Through_Data"] = self.robot_data["parameter_ranges"]["Follow_Through_Data"]
+        if "Follow_Through_Data" in self.robot.get_parameter_ranges():
+            mapped["Follow_Through_Data"] = self.robot.get_parameter_ranges()["Follow_Through_Data"]
 
         for key, value in animation_principle_description.items():
             if key not in self.prompt_data["principles"]:
@@ -294,9 +299,9 @@ class LLAGPlanner:
                 mapped[key] = value
             elif "range" in scale_info:
                 gen_min, gen_max = scale_info["range"]
-                if key not in self.robot_data["parameter_ranges"]:
+                if key not in self.robot.get_parameter_ranges():
                     raise KeyError(f"{key} not found in specific parameter ranges")
-                spec_range = self.robot_data["parameter_ranges"][key]
+                spec_range = self.robot.get_parameter_ranges()[key]
                 mapped_value = self.linear_map(value, gen_min, gen_max, spec_range["min"], spec_range["max"])
                 mapped[key] = mapped_value
             else:
@@ -449,8 +454,8 @@ class LLAGPlanner:
 
         input_data = PlanWithContextInput(
             context=textual_context,
-            robot_capabilities=self.robot_data["capabilities"],
-            available_motion_primitives=self.robot_data["primitive_lib"],
+            robot_capabilities=self.robot.get_capabilities(),
+            available_motion_primitives=self.robot.get_primitive_lib(),
             principles=self.prompt_data["principles"]
         )
 

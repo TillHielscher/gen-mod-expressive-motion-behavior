@@ -4,10 +4,22 @@ from copy import deepcopy
 import numpy as np
 
 class LLAGTimeline:
-    def __init__(self):
+    def __init__(self, primitive_path=None, robot_description_path=None):
+        """Initialize timeline with optional robot-specific paths for idle block.
+        
+        Args:
+            primitive_path: Path to robot primitives folder
+            robot_description_path: Path to robot YAML configuration
+        """
         self.plan = []
+        self.primitive_path = primitive_path
+        self.robot_description_path = robot_description_path
+        
         logging.info("Initializing timeline with random idle block")
-        self.current_block = LLAGTimelineBlock("idle")
+        if primitive_path and robot_description_path:
+            self.current_block = LLAGTimelineBlock("idle", primitive_path=primitive_path, idle_data_yaml_path=robot_description_path)
+        else:
+            self.current_block = None  # Will be set when first block is added
 
         # initalize real time data
         self.rt_data = {"x": 0.0, "y": 0.0}
@@ -60,7 +72,7 @@ class LLAGTimeline:
             logging.info(f"[timeline] Advancing to next block; plan still has items; next block: {self.current_block.name_identifier}; remaining plan length: {len(self.plan)}; remaining plan: {[block.name_identifier for block in self.plan]}")
 
         else:            
-            self.current_block = LLAGTimelineBlock("idle")
+            self.current_block = LLAGTimelineBlock("idle", primitive_path=self.primitive_path, idle_data_yaml_path=self.robot_description_path)
 
             logging.info(f"[timeline] Advancing to next block; plan is empty; inserting idle block; next block: {self.current_block.name_identifier}")
 

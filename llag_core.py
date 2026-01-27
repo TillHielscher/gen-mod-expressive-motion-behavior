@@ -22,10 +22,23 @@ def get_joint_idx_from_names(joint_name, joint_names_list):
 
 
 class LLAGCore:
-    def __init__(self, use_pepper=False, use_virtual_pepper=True, console_log=True, debug_log=False, short_pipeline=True, modulate=True, primitive_lib_path="robot_pepper/primitive_saved", robot_description_path="robot_pepper/robot_data.yaml", prompt_data_path="prompts_v4.yaml", urdf_path="pepper-toolbox-main/src/peppertoolbox/urdf/pepper_pruned.urdf"):
-        self.use_pepper = use_pepper
-        self.use_virtual_pepper = use_virtual_pepper
-        self.urdf_path = urdf_path
+    def __init__(self, robot, use_real_robot=False, use_virtual_robot=True, console_log=True, debug_log=False, short_pipeline=True, modulate=True, prompt_data_path="prompts_v4.yaml"):
+        """Initialize LLAGCore with a robot instance.
+        
+        Args:
+            robot: Robot instance (e.g., PepperRobot, Go2Robot) that implements RobotBase
+            use_real_robot: Whether to use real robot hardware
+            use_virtual_robot: Whether to use virtual visualization
+            console_log: Enable console logging
+            debug_log: Enable debug logging
+            short_pipeline: Use short pipeline mode
+            modulate: Enable motion modulation
+            prompt_data_path: Path to prompt configuration
+        """
+        self.robot = robot
+        self.use_real_robot = use_real_robot
+        self.use_virtual_robot = use_virtual_robot
+        self.urdf_path = robot.get_urdf_path()
         self.console_log = console_log
         self.debug_log = debug_log
         self.short_pipeline = short_pipeline
@@ -35,10 +48,11 @@ class LLAGCore:
         self.rt_gain = 0.01
         self.rt_c = "0"  # real-time condition for controlled experiment: "0"=none, "2"=right, "3"=left-right
         self.modulate = modulate
-        self.primitive_lib_path = primitive_lib_path
-        self.robot_description_path = robot_description_path
         self.prompt_data_path = prompt_data_path
         
+        # Get robot-specific paths from robot instance
+        self.primitive_lib_path = robot.get_primitive_path()
+        self.robot_description_path = robot.get_robot_description_path()
 
         # Logging setup
         if self.console_log:
@@ -49,9 +63,9 @@ class LLAGCore:
         else:
             logging.basicConfig(level=logging.WARNING)
 
-        # Core components
-        self.timeline = LLAGTimeline()
-        self.planner = LLAGPlanner(self.prompt_data_path, self.robot_description_path)
+        # Core components - pass robot to planner
+        self.timeline = LLAGTimeline(self.primitive_lib_path, self.robot_description_path)
+        self.planner = LLAGPlanner(robot, self.prompt_data_path)
         self.context_store = ContextStore()
         self.executor = ThreadPoolExecutor(max_workers=1)
 
@@ -61,13 +75,14 @@ class LLAGCore:
         self.markdown_text = None
         self.viser_ready = False
         self.joint_names_list = None  # Will be populated from virtual session
+        self.real_robot_exec_data = None  # Will store robot-specific execution data
 
     async def controller_loop(self, hz=60):
         interval = 1.0 / hz
-        if self.use_pepper:
-            # Import peppertoolbox only if using real robot
-            import peppertoolbox
-            names, limits_dict, mask = peppertoolbox.prepare_pepper_execution(self.session.motion_service)
+        if self.use_real_robot:
+            # Prepare real robot execution (robot-specific)
+            self.real_robot_exec_data = self.robot.prepare_real_robot_execution(self.session)
+        
         cycle_even = True
         while True:
             cycle_start = time.time()
@@ -78,15 +93,20 @@ class LLAGCore:
                 block_state = block.dmp.get_state()
 
                 if cycle_even:
+                    # Execute on real robot if enabled
+                    if self.use_real_robot:
+                        self.robot.execute_state_on_real_robot(
+                            self.session, 
+                            block_state["y"],
+                            self.real_robot_exec_data
+                        )
 
-                    if self.use_pepper:
-                        import peppertoolbox
-                        #names, limits_dict, mask = peppertoolbox.prepare_pepper_execution(self.session.motion_service)
-                        peppertoolbox.execute_state(self.session, block_state["y"], names, limits_dict, mask)
-
-                    if self.use_virtual_pepper:
-                        # Use direct array setting without translation
-                        self.virtual_session.set_cfg_array(self.convert_joint_array(block_state["y"]))
+                    # Execute on virtual robot if enabled
+                    if self.use_virtual_robot:
+                        self.robot.execute_state_on_virtual_robot(
+                            self.virtual_session,
+                            block_state["y"]
+                        )
 
                 if block.is_complete():
                     self.timeline.advance_block()
@@ -110,7 +130,7 @@ class LLAGCore:
         while True:
             if len(self.timeline.plan) == 0:
                 if self.timeline.current_block.name_identifier.lower().startswith("zero") or self.timeline.current_block.name_identifier.lower().startswith("idle"):
-                    if self.use_virtual_pepper:
+                    if self.use_virtual_robot:
                         self.markdown_text.content = f"""Executing Idle.
                         
                         Plan has no items."""
@@ -121,7 +141,7 @@ class LLAGCore:
                     if self.experiment_started:
                         self.experiment_finished = True
                 else:
-                    if self.use_virtual_pepper:
+                    if self.use_virtual_robot:
                         self.markdown_text.content = f"""Executing "{self.timeline.get_current_block().name_identifier}".
                         
                         Plan has no items."""
@@ -130,7 +150,7 @@ class LLAGCore:
                         
                         Plan has no items.""")
             else:
-                if self.use_virtual_pepper:
+                if self.use_virtual_robot:
                     self.markdown_text.content = f"""Executing "{self.timeline.get_current_block().name_identifier}"
                 
                     Remaining plan:\n{[block.name_identifier for block in self.timeline.plan]}"""
@@ -142,7 +162,7 @@ class LLAGCore:
             if context != last_context and context != {}:
                 last_context = context
                 logging.info("[LLAGCore] Planner triggered with new context...")
-                if self.use_virtual_pepper:
+                if self.use_virtual_robot:
                     self.markdown_text.content = f"Planning with new context"
                 loop = asyncio.get_event_loop()
                 if self.short_pipeline:
@@ -166,9 +186,9 @@ class LLAGCore:
                         for key in animation["Follow_Through_Data"].keys():
                             data = animation["Follow_Through_Data"][key]
                             if "none" in data["condition"].lower():
-                                follow_through_data_list.append(np.array([get_joint_idx_from_names(data["target"], self.joint_names_list), get_joint_idx_from_names(data["source"], self.joint_names_list), data["inverse"]]))
+                                follow_through_data_list.append(np.array([self.robot.get_joint_index(data["target"]), self.robot.get_joint_index(data["source"]), data["inverse"]]))
                             else:
-                                follow_through_data_list.append(np.array([get_joint_idx_from_names(data["target"], self.joint_names_list), get_joint_idx_from_names(data["source"], self.joint_names_list), data["inverse"], get_joint_idx_from_names(data["condition"], self.joint_names_list), data["lower_limit"], data["upper_limit"]]))
+                                follow_through_data_list.append(np.array([self.robot.get_joint_index(data["target"]), self.robot.get_joint_index(data["source"]), data["inverse"], self.robot.get_joint_index(data["condition"]), data["lower_limit"], data["upper_limit"]]))
                         block.dmp.set_principle_parameters(p_ant=animation["Anticipation"], p_follow=animation["Follow_Through"], p_arc=animation["Arcs"], p_slow=animation["Slow_In_Slow_Out"], p_progression=["fast", "fast", "fast"], p_time=animation["Timing"], p_exa=animation["Exaggeration"])#, p_follow_data=follow_through_data_list)
                     self.timeline.append_block(block)                
 
@@ -190,9 +210,9 @@ class LLAGCore:
             for key in animation["Follow_Through_Data"].keys():
                 data = animation["Follow_Through_Data"][key]
                 if "none" in data["condition"].lower():
-                    follow_through_data_list.append(np.array([get_joint_idx_from_names(data["target"], self.joint_names_list), get_joint_idx_from_names(data["source"], self.joint_names_list), data["inverse"]]))
+                    follow_through_data_list.append(np.array([self.robot.get_joint_index(data["target"]), self.robot.get_joint_index(data["source"]), data["inverse"]]))
                 else:
-                    follow_through_data_list.append(np.array([get_joint_idx_from_names(data["target"], self.joint_names_list), get_joint_idx_from_names(data["source"], self.joint_names_list), data["inverse"], get_joint_idx_from_names(data["condition"], self.joint_names_list), data["lower_limit"], data["upper_limit"]]))
+                    follow_through_data_list.append(np.array([self.robot.get_joint_index(data["target"]), self.robot.get_joint_index(data["source"]), data["inverse"], self.robot.get_joint_index(data["condition"]), data["lower_limit"], data["upper_limit"]]))
             block.dmp.set_principle_parameters(p_ant=animation["Anticipation"], p_follow=animation["Follow_Through"], p_arc=animation["Arcs"], p_slow=animation["Slow_In_Slow_Out"], p_progression=["fast", "fast", "fast"], p_time=animation["Timing"], p_exa=animation["Exaggeration"], p_follow_data=follow_through_data_list)
             self.timeline.append_block(block)
         if self.timeline.current_block.name_identifier.lower().startswith("zero"):
@@ -261,12 +281,12 @@ class LLAGCore:
 
     async def run(self):
         # Session setup
-        if self.use_pepper:
+        if self.use_real_robot:
             import peppertoolbox
             self.session = peppertoolbox.PepperSession(PEPPER_IP="129.69.223.125")
             self.pepper_audio_service = self.session.session.service("ALAudioDevice")
             self.session.posture_service.goToPosture("StandInit", 0.1)
-        if self.use_virtual_pepper:
+        if self.use_virtual_robot:
             self.virtual_session = VirtualSession(urdf_path=self.urdf_path)
             self.joint_names_list = self.virtual_session.get_joint_names()
             self.markdown_text = self.virtual_session.server.gui.add_markdown(content=f"Timeline Plan:\n {self.timeline.plan}")
@@ -280,7 +300,7 @@ class LLAGCore:
                 self.context_store.handle_context_input({"type": "text", "context": str(context)})
                 text_field.value = ""
 
-            #if not self.use_pepper:
+            #if not self.use_real_robot:
             while True:
                 clients = self.virtual_session.server.get_clients()
                 if clients:
@@ -298,29 +318,3 @@ class LLAGCore:
             self._safe_task(self.planner_trigger_loop(), "planner_trigger_loop"),
             self._safe_task(self.rt_data_handler(), "rt_data_handler"),
         )
-
-    @staticmethod
-    def convert_joint_array(input_array):
-        joint_names = [
-            "KneePitch", "HipPitch", "HipRoll", "HeadYaw", "HeadPitch",
-            "LShoulderPitch", "LShoulderRoll", "LElbowYaw", "LElbowRoll", "LWristYaw", "LHand",
-            "LFinger21", "LFinger22", "LFinger23", "LFinger11", "LFinger12", "LFinger13",
-            "LFinger41", "LFinger42", "LFinger43", "LFinger31", "LFinger32", "LFinger33",
-            "LThumb1", "LThumb2", "RShoulderPitch", "RShoulderRoll", "RElbowYaw", "RElbowRoll",
-            "RWristYaw", "RHand", "RFinger41", "RFinger42", "RFinger43", "RFinger31",
-            "RFinger32", "RFinger33", "RFinger21", "RFinger22", "RFinger23", "RFinger11",
-            "RFinger12", "RFinger13", "RThumb1", "RThumb2", "WheelFL", "WheelB", "WheelFR"
-        ]
-
-        target_joints = [
-            "HeadYaw", "HeadPitch", "HipRoll", "HipPitch", "KneePitch",
-            "LShoulderPitch", "LShoulderRoll", "LElbowYaw", "LElbowRoll", "LWristYaw", "LHand",
-            "RShoulderPitch", "RShoulderRoll", "RElbowYaw", "RElbowRoll", "RWristYaw", "RHand",
-            "WheelFL", "WheelB", "WheelFR"
-        ]
-
-        if len(input_array) != 48:
-            raise ValueError("Input array must have 48 elements.")
-
-        target_indices = [joint_names.index(joint) for joint in target_joints]
-        return input_array[target_indices]
