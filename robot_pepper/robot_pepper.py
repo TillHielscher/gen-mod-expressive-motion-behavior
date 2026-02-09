@@ -14,7 +14,7 @@ from pathlib import Path
 
 # Add parent directory to path to import robot_base
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from robot_base import RobotBase
+from new_robot_base import RobotBase
 
 
 class PepperRobot(RobotBase):
@@ -168,6 +168,10 @@ class PepperRobot(RobotBase):
             raise ValueError(f"Unknown joint name: {joint_name}")
         return self.JOINT_NAME_TO_IDX[joint_name]
     
+    def get_initial_joint_angles(self):
+        """Return standing-init joint angles in radians for the virtual session."""
+        return {k: np.deg2rad(v) for k, v in self.STAND_INIT_JOINT_ANGLES.items()}
+
     def get_urdf_path(self):
         """Get path to Pepper's URDF file."""
         return self.urdf_path

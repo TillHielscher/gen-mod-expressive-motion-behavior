@@ -17,7 +17,7 @@ from scipy.optimize import minimize
 
 # Add parent directory to path to import robot_base
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from robot_base import RobotBase
+from new_robot_base import RobotBase
 
 
 class Go2Robot(RobotBase):
@@ -168,6 +168,10 @@ class Go2Robot(RobotBase):
             raise ValueError(f"Unknown joint name: {joint_name}")
         return self.JOINT_NAME_TO_IDX[joint_name]
     
+    def get_initial_joint_angles(self):
+        """Return default joint angles in radians for the virtual session."""
+        return {name: float(self.DEFAULT_JOINT_ANGLES[i]) for i, name in enumerate(self.JOINT_NAMES)}
+
     def get_urdf_path(self):
         """Get path to URDF file."""
         return self.urdf_path
