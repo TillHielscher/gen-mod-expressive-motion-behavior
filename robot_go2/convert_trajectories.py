@@ -12,15 +12,14 @@ from pathlib import Path
 
 
 def go2_trajectory_to_demo(trajectory_path: Path, sample_dt=1 / 60):
-    """
-    Load and resample Go2 trajectory data.
-    
+    """Load and resample Go2 trajectory data.
+
     Args:
-        trajectory_path: Path to directory containing q.txt and tick.txt
-        sample_dt: Target sample time in seconds (default: 1/60)
-        
+        trajectory_path: Path to directory containing ``q.txt`` and ``tick.txt``.
+        sample_dt: Target sample time in seconds (default: 1/60).
+
     Returns:
-        Dictionary with resampled q and t arrays
+        Dictionary with resampled ``q`` and ``t`` arrays.
     """
     q = np.loadtxt(trajectory_path / "q.txt", dtype=np.float32)
     ticks = np.loadtxt(trajectory_path / "tick.txt", dtype=np.float32)
@@ -54,13 +53,13 @@ trajectory_dirs = {
 
 
 def convert_demo_dict_to_dmp(demo_dict, output_name, n_basis=100):
-    """
-    Convert a demo dictionary (from go2_trajectory_to_demo) to DMP format.
-    
+    """Convert a demo dictionary to DMP format.
+
     Args:
-        demo_dict: Dictionary with keys 'q', 't' from go2_trajectory_to_demo
-        output_name: Name for output DMP (without extension)
-        n_basis: Number of basis functions
+        demo_dict: Dictionary with keys ``'q'``, ``'t'`` from
+            :func:`go2_trajectory_to_demo`.
+        output_name: Name for output DMP (without extension).
+        n_basis: Number of basis functions.
     """
     print(f"Converting demo dict -> {output_name}")
     

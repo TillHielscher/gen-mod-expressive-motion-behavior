@@ -1,0 +1,9 @@
+numpy
+pydantic
+pyyaml
+viser
+yourdfpy
+scipy
+python-dotenv
+openai
+ollama

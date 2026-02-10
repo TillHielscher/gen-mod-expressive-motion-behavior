@@ -14,7 +14,7 @@ from __future__ import annotations
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
 import numpy as np
 import viser
@@ -28,9 +28,9 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
 # RobotBase
-# ═══════════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
 
 class RobotBase(ABC):
     """Interface that every robot implementation must satisfy.
@@ -45,7 +45,7 @@ class RobotBase(ABC):
         self.robot_dir = Path(robot_dir)
         self.config = self._load_config()
 
-    # ── config loading ───────────────────────────────────────────────────────
+    # -- Config loading --------------------------------------------------------
 
     def _load_config(self) -> dict:
         for candidate in (
@@ -60,7 +60,7 @@ class RobotBase(ABC):
             f"(tried robot_data.yaml / {self.robot_dir.name}.yaml)"
         )
 
-    # ── metadata (concrete, config-driven) ───────────────────────────────────
+    # -- Metadata (concrete, config-driven) ------------------------------------
 
     def get_capabilities(self) -> str:
         return self.config.get("capabilities", "")
@@ -80,7 +80,7 @@ class RobotBase(ABC):
     def get_robot_description_path(self) -> str:
         return str(self.robot_dir / f"{self.robot_dir.name}.yaml")
 
-    # ── abstract: identity ───────────────────────────────────────────────────
+    # -- Abstract: identity ----------------------------------------------------
 
     @abstractmethod
     def get_joint_names(self) -> List[str]:
@@ -105,7 +105,7 @@ class RobotBase(ABC):
         """
         return {}
 
-    # ── abstract: virtual execution ──────────────────────────────────────────
+    # -- Abstract: virtual execution -------------------------------------------
 
     @abstractmethod
     def execute_state_on_virtual_robot(self, virtual_session, state, primitive_name: str = "") -> None:
@@ -117,29 +117,25 @@ class RobotBase(ABC):
         """
         ...
 
-    # ── abstract: real-robot session (owned by robot module) ─────────────────
+    # -- Optional: real-robot session (owned by robot module) ------------------
 
     def create_real_session(self) -> None:
         """Create & store the hardware connection.
 
         Called once by ``Core.run()`` when ``use_real_robot=True``.
-        The default implementation raises — override in the robot subclass.
+        Override in the robot subclass to implement real-robot support.
         """
-        raise NotImplementedError(
-            f"{type(self).__name__} does not implement create_real_session()"
-        )
+        pass
 
-    def execute_on_real_robot(self, state) -> None:
+    def execute_state_on_real_robot(self, state) -> None:
         """Send a DMP state array to the real hardware.
 
         Called every control tick by the core when ``use_real_robot=True``.
-        The default implementation raises — override in the robot subclass.
+        Override in the robot subclass to implement real-robot support.
         """
-        raise NotImplementedError(
-            f"{type(self).__name__} does not implement execute_on_real_robot()"
-        )
+        pass
 
-    # ── optional: real-time data ──────────────────────────────────────────
+    # -- Optional: real-time data ----------------------------------------------
 
     def handle_rt(self, block) -> None:
         """Handle real-time modulation of the current motion block.
@@ -153,7 +149,7 @@ class RobotBase(ABC):
         """
         pass  # no RT handling by default
 
-    # ── optional: floating-base robots ───────────────────────────────────────
+    # -- Optional: floating-base robots ----------------------------------------
 
     def compute_base_transform(self, joint_array):
         """For floating-base robots (quadrupeds), return (position, quaternion).
@@ -162,30 +158,19 @@ class RobotBase(ABC):
         """
         return None
 
-    # ── trajectory translation (optional) ────────────────────────────────────
 
-    def translate_trajectory_to_internal(self, external_traj):
-        """Convert robot-native trajectory → internal DMP format."""
-        raise NotImplementedError
-
-    def translate_trajectory_to_external(self, internal_traj):
-        """Convert internal DMP format → robot-native trajectory."""
-        raise NotImplementedError
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
 # ViserView
-# ═══════════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
 
 class ViserView:
     """Viser server: 3D URDF scene + GUI panels.
 
-    Parameters
-    ----------
-    urdf_path : path to the robot URDF
-    initial_joint_angles : ``{joint_name: radians}``
-    principle_ranges : ``{"Anticipation": {"scale_range": [0, 10]}, …}``
-    port : Viser server port
+    Args:
+        urdf_path: Path to the robot URDF.
+        initial_joint_angles: ``{joint_name: radians}`` initial pose.
+        principle_ranges: ``{"Anticipation": {"scale_range": [0, 10]}, …}``.
+        port: Viser server port.
     """
 
     def __init__(
@@ -195,7 +180,7 @@ class ViserView:
         principle_ranges: Optional[dict] = None,
         port: int = 8088,
     ) -> None:
-        # ── 3D scene ──────────────────────────────────────────────────────────
+        # -- 3D scene ------------------------------------------------------
         self.urdf_path = Path(urdf_path)
         if not self.urdf_path.exists():
             raise FileNotFoundError(f"URDF not found: {self.urdf_path}")
@@ -229,7 +214,7 @@ class ViserView:
         )
         self.server.scene.enable_default_lights()
 
-        # ── GUI state ─────────────────────────────────────────────────────────
+        # -- GUI state -----------------------------------------------------
         self._principle_ranges = principle_ranges or {}
         self._core: Optional[Core] = None  # set via attach_core()
 
@@ -244,9 +229,7 @@ class ViserView:
         # Status display
         self._status_handle = None
 
-    # ──────────────────────────────────────────────────────────────────────────
-    # Lifecycle
-    # ──────────────────────────────────────────────────────────────────────────
+    # -- Lifecycle ---------------------------------------------------------
 
     def attach_core(self, core: Core) -> None:
         """Wire back-references needed for context push and slider re-modulation."""
@@ -255,9 +238,7 @@ class ViserView:
         self._add_context_inputs()
         self._init_now_playing()
 
-    # ──────────────────────────────────────────────────────────────────────────
-    # 3D scene helpers  (called by robot modules)
-    # ──────────────────────────────────────────────────────────────────────────
+    # -- 3D scene helpers (called by robot modules) ------------------------
 
     def set_cfg_array(self, values) -> None:
         self.viser_urdf.update_cfg(np.asarray(values))
@@ -270,9 +251,7 @@ class ViserView:
                 frame.position = tuple(position)
                 frame.wxyz = tuple(wxyz)
 
-    # ──────────────────────────────────────────────────────────────────────────
-    # Context inputs
-    # ──────────────────────────────────────────────────────────────────────────
+    # -- Context inputs ----------------------------------------------------
 
     def _add_context_inputs(self) -> None:
         gui = self.server.gui
@@ -298,9 +277,7 @@ class ViserView:
                 image_field.value = ""
                 audio_field.value = ""
 
-    # ──────────────────────────────────────────────────────────────────────────
-    # Status display
-    # ──────────────────────────────────────────────────────────────────────────
+    # -- Status display ----------------------------------------------------
 
     def _add_status_display(self) -> None:
         gui = self.server.gui
@@ -311,9 +288,7 @@ class ViserView:
         if self._status_handle is not None:
             self._status_handle.content = text
 
-    # ──────────────────────────────────────────────────────────────────────────
-    # Now Playing  (always visible, even for idle blocks)
-    # ──────────────────────────────────────────────────────────────────────────
+    # -- Now Playing (always visible, even for idle blocks) ----------------
 
     def _init_now_playing(self) -> None:
         """Create the persistent Now Playing section showing the current block."""
@@ -347,9 +322,7 @@ class ViserView:
         self._now_playing_folder = folder
         self._now_playing_label = label
 
-    # ──────────────────────────────────────────────────────────────────────────
-    # Sequence visualization
-    # ──────────────────────────────────────────────────────────────────────────
+    # -- Sequence visualisation --------------------------------------------
 
     def build_sequence(self, unmapped_seq: list[dict]) -> None:
         """Create the 'Plan' section with block folders."""
@@ -422,9 +395,7 @@ class ViserView:
             self._core._apply_modulation(plan[plan_idx], remapped)
             logger.info("[view] Slider update → re-modulated block #%d", plan_idx + 1)
 
-    # ──────────────────────────────────────────────────────────────────────────
-    # Tick  (called from Core's planner-trigger loop)
-    # ──────────────────────────────────────────────────────────────────────────
+    # -- Tick (called from Core's planner-trigger loop) --------------------
 
     def tick(self) -> None:
         """Detect timeline block changes and update Now Playing."""

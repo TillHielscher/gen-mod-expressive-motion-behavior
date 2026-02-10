@@ -22,7 +22,7 @@ import os
 from typing import Dict, List, Literal, Optional, Type, TypeVar
 
 import yaml
-from pydantic import BaseModel, ValidationError, conlist
+from pydantic import BaseModel, ValidationError
 
 try:
     from dotenv import load_dotenv
@@ -37,21 +37,17 @@ except ImportError:
     OpenAI = None  # type: ignore[assignment,misc]
 
 try:
-    import ollama as _ollama_mod
     from ollama import Client as OllamaClient
-    from ollama import ResponseError as OllamaResponseError
 except ImportError:
     OllamaClient = None  # type: ignore[assignment,misc]
-    _ollama_mod = None  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T", bound=BaseModel)
 
-
-# ═══════════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
 # Pydantic schemas
-# ═══════════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
 
 class PrincipleScaleDefinition(BaseModel):
     scale_description: str
@@ -119,9 +115,9 @@ class AnimationDescriptionToAnimationPrincipleDescriptionOutput(BaseModel):
     Timing: int
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
 # Planner
-# ═══════════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
 
 class Planner:
     """LLM-backed planner that turns multimodal context into animated motion sequences."""
@@ -163,7 +159,7 @@ class Planner:
         else:
             raise ValueError(f"Unknown llm_backend: {llm_backend!r}. Use 'openai' or 'ollama'.")
 
-    # ── public pipelines ─────────────────────────────────────────────────────
+    # -- Public pipelines --------------------------------------------------
 
     def short_pipeline(self, context: dict) -> tuple[list[dict], list[dict]]:
         """Single-call pipeline: context → animated sequence."""
@@ -185,7 +181,7 @@ class Planner:
             unmapped_seq.append(unmapped)
         return mapped_seq, unmapped_seq
 
-    # ── internal: short pipeline ─────────────────────────────────────────────
+    # -- Internal: short pipeline ------------------------------------------
 
     def _generate_animated_sequence(self, context: dict) -> tuple[list[dict], list[dict]]:
         system_prompt = self.prompt_data["plan_with_context"]
@@ -214,7 +210,7 @@ class Planner:
             unmapped_seq.append(anim.dict())
         return mapped_seq, unmapped_seq
 
-    # ── internal: long pipeline ──────────────────────────────────────────────
+    # -- Internal: long pipeline -------------------------------------------
 
     def _generate_plan(self, context: dict) -> list[str]:
         textual_context = self._build_textual_context(context)
@@ -258,7 +254,7 @@ class Planner:
         )
         return self._map_principles_to_parameters(result.dict()), result.dict()
 
-    # ── multimodal context assembly ──────────────────────────────────────────
+    # -- Multimodal context assembly ---------------------------------------
 
     def _build_textual_context(self, context: dict) -> str:
         """Convert a multimodal context dict into a single textual description
@@ -312,7 +308,7 @@ class Planner:
         logger.info("[planner] Transcribed audio: %s", result.text)
         return result.text
 
-    # ── parameter mapping ────────────────────────────────────────────────────
+    # -- Parameter mapping -------------------------------------------------
 
     def _map_principles_to_parameters(self, principle_desc: dict) -> dict:
         """Map abstract principle ratings to robot-specific parameter values."""
@@ -355,7 +351,7 @@ class Planner:
 
         return mapped
 
-    # ── LLM call helpers ─────────────────────────────────────────────────────
+    # -- LLM call helpers --------------------------------------------------
 
     @staticmethod
     def _encode_image(image_path: str) -> str:
@@ -382,7 +378,7 @@ class Planner:
                 temperature=temperature, image_path=image_path,
             )
 
-    # ── OpenAI backend ───────────────────────────────────────────────────────
+    # -- OpenAI backend ----------------------------------------------------
 
     def _call_llm_openai(
         self,
@@ -418,7 +414,7 @@ class Planner:
             logger.error("OpenAI API error: %s", e)
             raise
 
-    # ── Ollama backend ───────────────────────────────────────────────────────
+    # -- Ollama backend ----------------------------------------------------
 
     def _call_llm_ollama(
         self,
@@ -476,7 +472,7 @@ class Planner:
 
         return result
 
-    # ── misc ─────────────────────────────────────────────────────────────────
+    # -- Misc --------------------------------------------------------------
 
     @staticmethod
     def _load_yaml(path: str) -> dict:

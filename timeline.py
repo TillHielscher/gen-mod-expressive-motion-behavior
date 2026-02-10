@@ -24,10 +24,9 @@ import animation_dmp
 
 logger = logging.getLogger(__name__)
 
-
-# ═══════════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
 # TimelineBlock
-# ═══════════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
 
 class TimelineBlock:
     """One motion primitive on the timeline, backed by an ``animation_dmp.DMP``."""
@@ -42,7 +41,7 @@ class TimelineBlock:
         self.dmp = self._load_dmp(primitive_path, name_identifier, idle_data_yaml_path)
         self.dmp.init_state()
 
-    # -- runtime interface -----------------------------------------------------
+    # -- Runtime interface -----------------------------------------------------
 
     def step(self) -> None:
         self.dmp.step()
@@ -51,7 +50,7 @@ class TimelineBlock:
         state = self.dmp.get_state()
         return state["t"] >= state["tau"]
 
-    # -- loading ---------------------------------------------------------------
+    # -- Loading ---------------------------------------------------------------
 
     def _load_dmp(
         self,
@@ -86,7 +85,6 @@ class TimelineBlock:
             chosen = self._match_name(name_identifier, base_names)
 
         path = os.path.join(folder_path, chosen)
-        #logger.debug("[block] Selected DMP: %s", path)
         return animation_dmp.DMP.load(path)
 
     @staticmethod
@@ -115,9 +113,9 @@ class TimelineBlock:
         return max(scores, key=scores.get)  # type: ignore[arg-type]
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
 # Timeline
-# ═══════════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
 
 class Timeline:
     """FIFO queue of motion blocks with seamless joining."""
@@ -133,7 +131,7 @@ class Timeline:
             idle_data_yaml_path=robot_description_path,
         )
 
-    # -- queue operations ------------------------------------------------------
+    # -- Queue operations ------------------------------------------------------
 
     def append_block(self, block: TimelineBlock) -> None:
         self.plan.append(block)
@@ -143,7 +141,7 @@ class Timeline:
     def clear_plan(self) -> None:
         self.plan.clear()
 
-    # -- accessors -------------------------------------------------------------
+    # -- Accessors -------------------------------------------------------------
 
     def get_current_block(self) -> TimelineBlock | None:
         return self.current_block
@@ -151,7 +149,7 @@ class Timeline:
     def get_plan_names(self) -> list[str]:
         return [b.name_identifier for b in self.plan]
 
-    # -- advance ---------------------------------------------------------------
+    # -- Advance ---------------------------------------------------------------
 
     def advance_block(self) -> None:
         """Move to the next block, seamlessly joining DMP states."""
@@ -174,7 +172,6 @@ class Timeline:
                 primitive_path=self.primitive_path,
                 idle_data_yaml_path=self.robot_description_path,
             )
-            #logger.debug("[timeline] Plan empty → idle (%s)", self.current_block.name_identifier)
 
             # Add subtle randomisation to zero-motion idle primitives
             if self.current_block.name_identifier.lower().startswith("zero"):

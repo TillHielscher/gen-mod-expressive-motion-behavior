@@ -13,34 +13,8 @@ from __future__ import annotations
 
 import logging
 from copy import deepcopy
-from typing import Optional
 
 logger = logging.getLogger(__name__)
-
-
-# ---------------------------------------------------------------------------
-# Public helpers
-# ---------------------------------------------------------------------------
-
-def validate_context(ctx: dict) -> dict:
-    """Validate and normalise a raw context dict.
-
-    Accepted keys: ``text``, ``image``, ``audio``.
-    At least one must be present.  Unknown keys are silently dropped.
-
-    Returns a clean copy containing only the recognised keys.
-
-    Raises ``ValueError`` when no valid modality is present.
-    """
-    VALID_KEYS = {"text", "image", "audio"}
-    cleaned = {k: v for k, v in ctx.items() if k in VALID_KEYS and v}
-    if not cleaned:
-        raise ValueError(
-            "Context must contain at least one of: 'text', 'image', 'audio'. "
-            f"Got keys: {list(ctx.keys())}"
-        )
-    return cleaned
-
 
 # ---------------------------------------------------------------------------
 # Context Store
@@ -58,24 +32,43 @@ class ContextStore:
         self._context: dict = {}
         self._version: int = 0
 
-    # -- write -----------------------------------------------------------------
+    def validate_context(self, ctx: dict) -> dict:
+        """Validate and normalise a raw context dict.
+
+        Accepted keys: ``text``, ``image``, ``audio``.
+        At least one must be present.  Unknown keys are silently dropped.
+
+        Returns a clean copy containing only the recognised keys.
+
+        Raises ``ValueError`` when no valid modality is present.
+        """
+        VALID_KEYS = {"text", "image", "audio"}
+        cleaned = {k: v for k, v in ctx.items() if k in VALID_KEYS and v}
+        if not cleaned:
+            raise ValueError(
+                "Context must contain at least one of: 'text', 'image', 'audio'. "
+                f"Got keys: {list(ctx.keys())}"
+            )
+        return cleaned
+    
+    @property
+    def version(self) -> int:
+        return self._version
+
+    # -- Write -----------------------------------------------------------------
 
     def push(self, raw_context: dict) -> None:
         """Accept a new multimodal context dict.
 
         The dict is validated and stored with a bumped version id.
         """
-        cleaned = validate_context(raw_context)
+        cleaned = self.validate_context(raw_context)
         self._version += 1
         self._context = {**cleaned, "_version": self._version}
         logger.info("[context] Stored context v%d  keys=%s", self._version, list(cleaned.keys()))
 
-    # -- read ------------------------------------------------------------------
+    # -- Read ------------------------------------------------------------------
 
     def get(self) -> dict:
         """Return a *copy* of the current context (empty dict if nothing yet)."""
         return deepcopy(self._context)
-
-    @property
-    def version(self) -> int:
-        return self._version

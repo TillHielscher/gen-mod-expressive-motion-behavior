@@ -10,28 +10,20 @@ import numpy as np
 import animation_dmp
 from pathlib import Path
 
-# Define trajectory files to convert
-# trajectories = {
-#     "wave_arm": "../kinova_viser/wave_arm_120.txt",
-#     "sway_joyful": "../kinova_viser/sway_joyful_120.txt",
-#     "point_right": "../kinova_viser/point_right.txt",
-#     "indicate_right": "../kinova_viser/indicate_right_120.txt",
-#     "default_to_zero": "../kinova_viser/default_to_zero.txt",
-#     "zero_to_default": "../kinova_viser/zero_to_default.txt",
-# }
+# Define trajectory files to convert.
 trajectories = {
     "default": "../kinova_viser/default.txt",
 }
 
+
 def convert_trajectory_to_dmp(input_file, output_name, n_basis=100, hz=120):
-    """
-    Convert a raw trajectory file to DMP format.
-    
+    """Convert a raw trajectory file to DMP format.
+
     Args:
-        input_file: Path to input .txt file
-        output_name: Name for output DMP (without extension)
-        n_basis: Number of basis functions
-        hz: Sampling frequency
+        input_file: Path to input ``.txt`` file.
+        output_name: Name for output DMP (without extension).
+        n_basis: Number of basis functions.
+        hz: Sampling frequency.
     """
     print(f"Converting {input_file} -> {output_name}")
     

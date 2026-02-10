@@ -28,10 +28,9 @@ from timeline import Timeline, TimelineBlock
 
 logger = logging.getLogger(__name__)
 
-
-# ═══════════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
 # Core
-# ═══════════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
 
 class Core:
     """Main orchestrator: controller loop · planner trigger · context listener."""
@@ -86,7 +85,7 @@ class Core:
         # Populated during run()
         self.view: Optional[ViserView] = None
 
-    # ── async run ─────────────────────────────────────────────────────────────
+    # -- Async run ---------------------------------------------------------
 
     async def run(self) -> None:
         # Real-robot session — owned by the robot module
@@ -111,7 +110,7 @@ class Core:
             self._safe(self._rt_data_loop(), "rt_data_loop"),
         )
 
-    # ── real-time data loop ──────────────────────────────────────────────────
+    # -- Real-time data loop -----------------------------------------------
 
     async def _rt_data_loop(self, hz: int = 20) -> None:
         """Core-owned async loop that calls the robot's handle_rt()."""
@@ -122,7 +121,7 @@ class Core:
                 self.robot.handle_rt(block)
             await asyncio.sleep(interval)
 
-    # ── controller loop ──────────────────────────────────────────────────────
+    # -- Controller loop ---------------------------------------------------
 
     async def _controller_loop(self, hz: int = 60) -> None:
         interval = 1.0 / hz
@@ -137,7 +136,7 @@ class Core:
 
                 if cycle_even:
                     if self.use_real_robot:
-                        self.robot.execute_on_real_robot(state_y)
+                        self.robot.execute_state_on_real_robot(state_y)
                     if self.use_virtual_robot:
                         self.robot.execute_state_on_virtual_robot(
                             self.view, state_y, block.name_identifier
@@ -149,7 +148,7 @@ class Core:
             cycle_even = not cycle_even
             await asyncio.sleep(max(0.0, interval - (time.time() - t0)))
 
-    # ── context listener (stdin) ─────────────────────────────────────────────
+    # -- Context listener (stdin) ------------------------------------------
 
     async def _context_listener(self) -> None:
         loop = asyncio.get_event_loop()
@@ -160,7 +159,7 @@ class Core:
                 self.context_store.push({"text": text})
             await asyncio.sleep(0.5)
 
-    # ── planner trigger ──────────────────────────────────────────────────────
+    # -- Planner trigger ---------------------------------------------------
 
     async def _planner_trigger_loop(self) -> None:
         last_version = -1
@@ -205,7 +204,7 @@ class Core:
 
             await asyncio.sleep(0.1)
 
-    # ── modulation ───────────────────────────────────────────────────────────
+    # -- Modulation --------------------------------------------------------
 
     def _apply_modulation(self, block: TimelineBlock, anim: dict) -> None:
         follow_data_list = []
@@ -234,7 +233,7 @@ class Core:
             p_follow_data=follow_data_list,
         )
 
-    # ── utilities ──────────────────────────────────────────────────────────────
+    # -- Utilities ---------------------------------------------------------
 
     async def _wait_for_client(self) -> None:
         while True:

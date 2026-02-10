@@ -6,9 +6,7 @@ It encapsulates all Pepper-specific functionality including trajectory translati
 joint mapping, and robot configuration.
 """
 
-import os
 import sys
-import yaml
 import numpy as np
 from pathlib import Path
 
@@ -18,9 +16,8 @@ from session import RobotBase
 
 
 class PepperRobot(RobotBase):
-    """
-    Pepper humanoid robot implementation.
-    
+    """Pepper humanoid robot implementation.
+
     Handles Pepper-specific trajectory translation, joint mapping,
     and configuration management.
     """
@@ -68,11 +65,10 @@ class PepperRobot(RobotBase):
     }
     
     def __init__(self, robot_dir="robot_pepper"):
-        """
-        Initialize Pepper robot.
-        
+        """Initialize Pepper robot.
+
         Args:
-            robot_dir: Path to the Pepper robot configuration directory
+            robot_dir: Path to the Pepper robot configuration directory.
         """
         super().__init__(robot_dir)
         # URDF path can be overridden, but defaults to description folder inside robot directory
@@ -98,89 +94,24 @@ class PepperRobot(RobotBase):
         self._rt_hold_steps = 40   # 2 s at 20 Hz (core RT loop rate)
         self._rt_step = 0
         self._rt_index = 0
-
-    def translate_trajectory_to_internal(self, pepper_traj, use_zero=False):
-        """
-        Translate Pepper trajectory format to internal EDMP format.
-        
-        Args:
-            pepper_traj: Dictionary with joint names as keys and position arrays as values
-            use_zero: If True, initialize with zeros; if False, use standing pose
-            
-        Returns:
-            numpy array of shape (timesteps, num_joints) in internal format
-        """
-        # Get the number of timesteps from the first trajectory
-        first_key = next(iter(pepper_traj.keys()))
-        num_timesteps = len(pepper_traj[first_key])
-        
-        # Initialize with zeros or standing pose
-        # Using 48 as total joint dimension (expandable for future use)
-        edmp_traj = np.zeros((num_timesteps, 48))
-        
-        # Iterate through time steps
-        for i in range(num_timesteps):
-            # If not using zero, set standing init values
-            if not use_zero:
-                for joint_name, angle_deg in self.STAND_INIT_JOINT_ANGLES.items():
-                    if joint_name in self.JOINT_NAME_TO_IDX:
-                        idx = self.JOINT_NAME_TO_IDX[joint_name]
-                        edmp_traj[i, idx] = np.deg2rad(angle_deg)
-            
-            # Overwrite with trajectory data
-            for joint_name, positions in pepper_traj.items():
-                # Skip empty or unnamed columns
-                if joint_name == "Unnamed: 0" or len(joint_name) <= 3:
-                    continue
-                
-                if joint_name in self.JOINT_NAME_TO_IDX:
-                    idx = self.JOINT_NAME_TO_IDX[joint_name]
-                    edmp_traj[i, idx] = positions[i]
-        
-        return edmp_traj
-    
-    def translate_trajectory_to_external(self, internal_traj):
-        """
-        Translate internal EDMP format to Pepper trajectory format.
-        
-        Args:
-            internal_traj: numpy array of shape (timesteps, num_joints)
-            
-        Returns:
-            Dictionary with joint names as keys and position arrays as values
-        """
-        pepper_traj = {}
-        
-        # Create reverse mapping
-        idx_to_joint = {idx: name for name, idx in self.JOINT_NAME_TO_IDX.items()}
-        
-        # Extract each joint's trajectory
-        for idx, joint_name in idx_to_joint.items():
-            if idx < internal_traj.shape[1]:  # Make sure index is valid
-                pepper_traj[joint_name] = internal_traj[:, idx].tolist()
-        
-        return pepper_traj
     
     def get_joint_names(self):
-        """
-        Get ordered list of Pepper joint names.
-        
-        Returns:
-            List of joint names in index order
-        """
+        """Return ordered list of Pepper joint names."""
         # Sort by index to get ordered list
         sorted_joints = sorted(self.JOINT_NAME_TO_IDX.items(), key=lambda x: x[1])
         return [name for name, idx in sorted_joints]
     
     def get_joint_index(self, joint_name):
-        """
-        Get the index for a specific joint name.
-        
+        """Return the index for the given joint name.
+
         Args:
-            joint_name: Name of the joint
-            
+            joint_name: Name of the joint.
+
         Returns:
-            Index of the joint in the internal representation
+            Index of the joint in the internal representation.
+
+        Raises:
+            ValueError: If *joint_name* is unknown.
         """
         if joint_name not in self.JOINT_NAME_TO_IDX:
             raise ValueError(f"Unknown joint name: {joint_name}")
@@ -218,46 +149,16 @@ class PepperRobot(RobotBase):
         """Get path to Pepper's URDF file."""
         return self.urdf_path
     
-    def set_urdf_path(self, path):
-        """Set custom URDF path."""
-        self.urdf_path = path
-    
-    def prepare_real_robot_execution(self, session):
-        """
-        Prepare real robot for execution (Pepper-specific).
-        
-        Args:
-            session: Pepper robot session
-            
-        Returns:
-            Tuple of (names, limits_dict, mask) needed for execution
-        """
-        import peppertoolbox
-        return peppertoolbox.prepare_pepper_execution(session.motion_service)
-    
-    def execute_state_on_real_robot(self, session, state, exec_data=None):
-        """
-        Execute state on real Pepper robot.
-        
-        Args:
-            session: Pepper robot session
-            state: Joint state array to execute
-            exec_data: Tuple of (names, limits_dict, mask) from prepare_real_robot_execution
-        """
-        import peppertoolbox
-        if exec_data is None:
-            # If not provided, prepare it now
-            exec_data = self.prepare_real_robot_execution(session)
-        names, limits_dict, mask = exec_data
-        peppertoolbox.execute_state(session, state, names, limits_dict, mask)
-    
     def execute_state_on_virtual_robot(self, virtual_session, state, primitive_name: str = ""):
-        """
-        Execute state on virtual Pepper robot.
-        
+        """Execute state on virtual Pepper robot.
+
+        Converts from the 48-dim internal format to Pepper's virtual
+        joint representation and pushes it to the viewer.
+
         Args:
-            virtual_session: Virtual session for visualization
-            state: Joint state array to execute (48-dimensional internal format)
+            virtual_session: Virtual session for visualisation.
+            state: Joint state array (48-dimensional internal format).
+            primitive_name: Currently unused; kept for interface parity.
         """
         # Convert from 48-dim internal format to Pepper's virtual representation
         converted_state = self.convert_joint_array_for_virtual(state)
@@ -265,17 +166,16 @@ class PepperRobot(RobotBase):
     
     @staticmethod
     def convert_joint_array_for_virtual(input_array):
-        """
-        Convert 48-dimensional internal joint array to Pepper's virtual representation.
-        
-        This maps from the internal representation to the specific joints used
-        by Pepper's virtual visualization.
-        
+        """Convert 48-dim internal joint array to Pepper's virtual representation.
+
+        Maps from the internal representation to the specific joints used
+        by Pepper's virtual visualisation.
+
         Args:
-            input_array: 48-dimensional joint state array
-            
+            input_array: 48-dimensional joint state array.
+
         Returns:
-            Array with joints ordered for Pepper's virtual session
+            Array with joints ordered for Pepper's virtual session.
         """
         joint_names = [
             "KneePitch", "HipPitch", "HipRoll", "HeadYaw", "HeadPitch",
@@ -303,24 +203,12 @@ class PepperRobot(RobotBase):
 
 
 def create_robot(robot_name):
-    """
-    Factory function to create a Pepper robot instance.
-    
+    """Factory function to create a Pepper robot instance.
+
     Args:
-        robot_name: Name of the robot (should be 'pepper')
-        
+        robot_name: Name of the robot (should be ``'pepper'``).
+
     Returns:
-        PepperRobot instance
+        Configured :class:`PepperRobot` instance.
     """
     return PepperRobot(robot_dir=f"robot_{robot_name}")
-
-
-if __name__ == "__main__":
-    # Example usage
-    pepper = PepperRobot()
-    
-    print("Pepper Robot Configuration:")
-    print(f"Capabilities: {pepper.get_capabilities()}")
-    print(f"Number of primitives: {len(pepper.get_primitive_lib())}")
-    print(f"Joint names: {pepper.get_joint_names()}")
-    print(f"URDF path: {pepper.get_urdf_path()}")
