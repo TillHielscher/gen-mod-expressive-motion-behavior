@@ -17,7 +17,7 @@ from scipy.optimize import minimize
 
 # Add parent directory to path to import robot_base
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from new_robot_base import RobotBase
+from session import RobotBase
 
 
 class Go2Robot(RobotBase):
