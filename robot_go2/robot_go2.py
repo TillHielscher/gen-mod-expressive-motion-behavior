@@ -6,6 +6,7 @@ It encapsulates all Go2-specific functionality including trajectory translation,
 joint mapping, and robot configuration.
 """
 
+import logging
 import os
 import sys
 import yaml
@@ -364,18 +365,18 @@ class Go2Robot(RobotBase):
             self._debug_counter += 1
         else:
             self._debug_counter = 0
-            print(f"\nFirst optimization result:")
-            print(f"  Position: {position}")
-            print(f"  Quaternion: {quaternion}")
-            print(f"  Planted: {planted_names}")
+            logging.debug(f"\nFirst optimization result:")
+            logging.debug(f"  Position: {position}")
+            logging.debug(f"  Quaternion: {quaternion}")
+            logging.debug(f"  Planted: {planted_names}")
             if result.success:
-                print(f"  Final error: {result.fun:.6e}")
-                print(f"  Iterations: {result.nit}")
+                logging.debug(f"  Final error: {result.fun:.6e}")
+                logging.debug(f"  Iterations: {result.nit}")
 
         if self._debug_counter > 0 and self._debug_counter % 100 == 0:
             err_str = f"{result.fun:.6e}" if result.success else 'N/A'
             iter_str = f"{result.nit}" if result.success else 'N/A'
-            print(f"Frame {self._debug_counter}: pos={position}, planted={planted_names}, error={err_str}, iters={iter_str}")
+            logging.debug(f"Frame {self._debug_counter}: pos={position}, planted={planted_names}, error={err_str}, iters={iter_str}")
 
         return (position, quaternion)
     

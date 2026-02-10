@@ -49,6 +49,7 @@ def main() -> None:
     print(f"Real robot   : {config['use_real_robot']}")
     print(f"Pipeline     : {'short' if config['short_pipeline'] else 'long'}")
     print(f"Modulation   : {config['modulate']}")
+    print(f"LLM backend  : {config.get('llm_backend', 'openai')}")
     print(f"Debug        : {config['debug']}")
     print()
 
@@ -59,6 +60,10 @@ def main() -> None:
         short_pipeline=config["short_pipeline"],
         modulate=config["modulate"],
         prompt_data_path=config["prompt_data_path"],
+        llm_backend=config.get("llm_backend", "openai"),
+        openai_model=config.get("openai_model", "gpt-4.1"),
+        ollama_model=config.get("ollama_model", "llama3.1"),
+        ollama_host=config.get("ollama_host", "http://localhost:11434"),
         debug=config["debug"],
     )
 

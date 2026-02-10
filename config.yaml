@@ -15,5 +15,16 @@ short_pipeline: false           # Use short planning pipeline (faster)
 modulate: true                 # Enable animation modulation
 debug: false                   # Enable debug logging
 
+# LLM backend: "openai" or "ollama"
+llm_backend: "ollama"
+
+# OpenAI-specific settings (only used when llm_backend is "openai")
+openai_model: "gpt-4.1" # ft:gpt-4.1-nano-2025-04-14:tillkisir:ft-v1:CDsmIPYb
+
+# Ollama-specific settings (only used when llm_backend is "ollama")
+# Note: Ollama does NOT support audio contexts.
+ollama_model: "gemma3:4b"
+ollama_host: "http://localhost:11434"
+
 # Paths
-prompt_data_path: "prompts_v4.yaml"
+prompt_data_path: "prompts.yaml"

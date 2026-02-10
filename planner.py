@@ -22,14 +22,27 @@ import os
 from typing import Dict, List, Literal, Optional, Type, TypeVar
 
 import yaml
-from openai import APIConnectionError, APIError, OpenAI, RateLimitError
-from pydantic import BaseModel, conlist
+from pydantic import BaseModel, ValidationError, conlist
 
 try:
     from dotenv import load_dotenv
     load_dotenv()
 except ImportError:
     pass
+
+# Backend-specific imports (deferred so the unused backend need not be installed)
+try:
+    from openai import APIConnectionError, APIError, OpenAI, RateLimitError
+except ImportError:
+    OpenAI = None  # type: ignore[assignment,misc]
+
+try:
+    import ollama as _ollama_mod
+    from ollama import Client as OllamaClient
+    from ollama import ResponseError as OllamaResponseError
+except ImportError:
+    OllamaClient = None  # type: ignore[assignment,misc]
+    _ollama_mod = None  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)
 
@@ -113,19 +126,42 @@ class AnimationDescriptionToAnimationPrincipleDescriptionOutput(BaseModel):
 class Planner:
     """LLM-backed planner that turns multimodal context into animated motion sequences."""
 
-    def __init__(self, robot, prompt_data_path: str = "prompts.yaml") -> None:
+    def __init__(
+        self,
+        robot,
+        prompt_data_path: str = "prompts.yaml",
+        llm_backend: Literal["openai", "ollama"] = "openai",
+        openai_model: str = "gpt-4.1",
+        ollama_model: str = "llama3.1",
+        ollama_host: str = "http://localhost:11434",
+    ) -> None:
         self.robot = robot
         self.prompt_data = self._load_yaml(prompt_data_path)
+        self.llm_backend = llm_backend
 
-        api_key = os.environ.get("OPENAI_API_KEY")
-        if not api_key:
-            raise EnvironmentError(
-                "OPENAI_API_KEY not set. Export it or place it in a .env file."
+        if llm_backend == "openai":
+            if OpenAI is None:
+                raise ImportError("openai package is not installed. Run: pip install openai")
+            api_key = os.environ.get("OPENAI_API_KEY")
+            if not api_key:
+                raise EnvironmentError(
+                    "OPENAI_API_KEY not set. Export it or place it in a .env file."
+                )
+            self.openai_client = OpenAI()
+            self.openai_model: str = openai_model
+            logger.info("Planner initialised  backend=openai  model=%s", self.openai_model)
+
+        elif llm_backend == "ollama":
+            if OllamaClient is None:
+                raise ImportError("ollama package is not installed. Run: pip install ollama")
+            self.ollama_client = OllamaClient(host=ollama_host)
+            self.ollama_model: str = ollama_model
+            logger.info(
+                "Planner initialised  backend=ollama  model=%s  host=%s",
+                self.ollama_model, ollama_host,
             )
-        self.client = OpenAI()
-        self.model_name: str = "ft:gpt-4.1-nano-2025-04-14:tillkisir:ft-v1:CDsmIPYb"
-        self.model_name: str = "gpt-4.1"
-        logger.info("Planner initialised  model=%s", self.model_name)
+        else:
+            raise ValueError(f"Unknown llm_backend: {llm_backend!r}. Use 'openai' or 'ollama'.")
 
     # ── public pipelines ─────────────────────────────────────────────────────
 
@@ -262,8 +298,13 @@ class Planner:
         return "; ".join(parts) if multimodal else " ".join(parts)
 
     def _transcribe_audio(self, audio_path: str) -> str:
+        if self.llm_backend != "openai":
+            raise RuntimeError(
+                "Audio transcription is only supported with the 'openai' backend. "
+                "Remove the 'audio' key from the context or switch to the OpenAI backend."
+            )
         with open(audio_path, "rb") as f:
-            result = self.client.audio.transcriptions.create(
+            result = self.openai_client.audio.transcriptions.create(
                 model="gpt-4o-transcribe",
                 file=f,
                 prompt="Transcribe the contents. It can be speech or sounds.",
@@ -329,6 +370,28 @@ class Planner:
         temperature: float = 0.0,
         image_path: Optional[str] = None,
     ) -> T:
+        """Dispatch to the active backend."""
+        if self.llm_backend == "openai":
+            return self._call_llm_openai(
+                system_prompt, input_data, output_schema,
+                temperature=temperature, image_path=image_path,
+            )
+        else:
+            return self._call_llm_ollama(
+                system_prompt, input_data, output_schema,
+                temperature=temperature, image_path=image_path,
+            )
+
+    # ── OpenAI backend ───────────────────────────────────────────────────────
+
+    def _call_llm_openai(
+        self,
+        system_prompt: str,
+        input_data: dict,
+        output_schema: Type[T],
+        temperature: float = 0.0,
+        image_path: Optional[str] = None,
+    ) -> T:
         user_content: list[dict] = [{"type": "input_text", "text": json.dumps(input_data)}]
         if image_path:
             b64 = self._encode_image(image_path)
@@ -341,11 +404,11 @@ class Planner:
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_content},
         ]
-        logger.info("[planner] Calling OpenAI  model=%s  image=%s", self.model_name, bool(image_path))
+        logger.info("[planner] Calling OpenAI  model=%s  image=%s", self.openai_model, bool(image_path))
 
         try:
-            response = self.client.responses.parse(
-                model=self.model_name,
+            response = self.openai_client.responses.parse(
+                model=self.openai_model,
                 input=messages,
                 temperature=temperature,
                 text_format=output_schema,
@@ -354,6 +417,64 @@ class Planner:
         except (APIError, APIConnectionError, RateLimitError) as e:
             logger.error("OpenAI API error: %s", e)
             raise
+
+    # ── Ollama backend ───────────────────────────────────────────────────────
+
+    def _call_llm_ollama(
+        self,
+        system_prompt: str,
+        input_data: dict,
+        output_schema: Type[T],
+        temperature: float = 0.0,
+        image_path: Optional[str] = None,
+    ) -> T:
+        # Build the user message content
+        # Ollama expects 'content' as a plain string; images go in a separate 'images' list.
+        user_text = json.dumps(input_data)
+
+        # Hint the model to return JSON (improves reliability)
+        user_text += "\n\nReturn your answer as JSON."
+
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_text},
+        ]
+
+        # Attach image if provided (Ollama vision models accept base64 images)
+        if image_path:
+            b64 = self._encode_image(image_path)
+            messages[-1]["images"] = [b64]  # type: ignore[index]
+
+        logger.info(
+            "[planner] Calling Ollama  model=%s  image=%s",
+            self.ollama_model, bool(image_path),
+        )
+
+        try:
+            response = self.ollama_client.chat(
+                model=self.ollama_model,
+                messages=messages,
+                format=output_schema.model_json_schema(),
+                options={"temperature": temperature},
+            )
+        except Exception as e:
+            logger.error("Ollama API error: %s", e)
+            raise
+
+        raw_content = response.message.content
+
+        try:
+            result = output_schema.model_validate_json(raw_content)
+        except (ValidationError, json.JSONDecodeError) as e:
+            logger.error(
+                "Failed to parse Ollama response into %s: %s\nRaw: %s",
+                output_schema.__name__, e, raw_content,
+            )
+            raise ValueError(
+                f"Ollama returned invalid structured output for {output_schema.__name__}: {e}"
+            ) from e
+
+        return result
 
     # ── misc ─────────────────────────────────────────────────────────────────
 

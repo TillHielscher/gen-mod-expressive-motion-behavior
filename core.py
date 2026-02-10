@@ -45,6 +45,10 @@ class Core:
         short_pipeline: bool = True,
         modulate: bool = True,
         prompt_data_path: str = "prompts.yaml",
+        llm_backend: str = "openai",
+        openai_model: str = "gpt-4.1",
+        ollama_model: str = "llama3.1",
+        ollama_host: str = "http://localhost:11434",
         debug: bool = False,
     ) -> None:
         self.robot = robot
@@ -62,7 +66,14 @@ class Core:
             robot.get_primitive_path(),
             robot.get_robot_description_path(),
         )
-        self.planner = Planner(robot, prompt_data_path)
+        self.planner = Planner(
+            robot,
+            prompt_data_path,
+            llm_backend=llm_backend,
+            openai_model=openai_model,
+            ollama_model=ollama_model,
+            ollama_host=ollama_host,
+        )
         self.context_store = ContextStore()
         self._executor = ThreadPoolExecutor(max_workers=1)
 

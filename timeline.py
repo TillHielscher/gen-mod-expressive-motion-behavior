@@ -86,7 +86,7 @@ class TimelineBlock:
             chosen = self._match_name(name_identifier, base_names)
 
         path = os.path.join(folder_path, chosen)
-        logger.info("[block] Selected DMP: %s", path)
+        #logger.debug("[block] Selected DMP: %s", path)
         return animation_dmp.DMP.load(path)
 
     @staticmethod
@@ -174,7 +174,7 @@ class Timeline:
                 primitive_path=self.primitive_path,
                 idle_data_yaml_path=self.robot_description_path,
             )
-            logger.info("[timeline] Plan empty → idle (%s)", self.current_block.name_identifier)
+            #logger.debug("[timeline] Plan empty → idle (%s)", self.current_block.name_identifier)
 
             # Add subtle randomisation to zero-motion idle primitives
             if self.current_block.name_identifier.lower().startswith("zero"):
