@@ -113,7 +113,7 @@ class AnimationDescriptionToAnimationPrincipleDescriptionOutput(BaseModel):
 class Planner:
     """LLM-backed planner that turns multimodal context into animated motion sequences."""
 
-    def __init__(self, robot, prompt_data_path: str = "prompts_v4.yaml") -> None:
+    def __init__(self, robot, prompt_data_path: str = "prompts.yaml") -> None:
         self.robot = robot
         self.prompt_data = self._load_yaml(prompt_data_path)
 

@@ -44,7 +44,7 @@ class Core:
         use_virtual_robot: bool = True,
         short_pipeline: bool = True,
         modulate: bool = True,
-        prompt_data_path: str = "prompts_v4.yaml",
+        prompt_data_path: str = "prompts.yaml",
         debug: bool = False,
     ) -> None:
         self.robot = robot
