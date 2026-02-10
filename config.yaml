@@ -4,7 +4,7 @@
 # Robot selection
 # Must match robot directory name: robot_{name}/robot_{name}.py with create_robot() function
 # Available robots: pepper, gen3_lite, go2
-robot: gen3_lite
+robot: pepper
 
 # Operation modes
 use_real_robot: false          # Use real robot hardware (currently only supports Pepper)

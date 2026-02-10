@@ -64,12 +64,13 @@ class VirtualSession:
             load_meshes=True,
         )
 
-        # Build sliders
-        with self.server.gui.add_folder("Joint position control"):
-            self.slider_handles, self.initial_config = self._create_sliders(
-                initial_joint_angles or {}
+        self.initial_config = list(
+            np.clip(
+                [initial_joint_angles.get(name, 0.0) for name in self.viser_urdf.get_actuated_joint_limits()],
+                [lo if lo is not None else -np.pi for lo, _ in self.viser_urdf.get_actuated_joint_limits().values()],
+                [hi if hi is not None else np.pi for _, hi in self.viser_urdf.get_actuated_joint_limits().values()],
             )
-
+        )
         self.viser_urdf.update_cfg(np.array(self.initial_config))
 
         # Grid & lights
@@ -80,38 +81,6 @@ class VirtualSession:
             cell_thickness=1000.0, shadow_opacity=1.0,
         )
         self.server.scene.enable_default_lights()
-
-        # Reset button
-        reset_btn = self.server.gui.add_button("Reset")
-
-        @reset_btn.on_click
-        def _(_):
-            self.set_cfg_array(self.initial_config)
-
-    # ── slider helpers ────────────────────────────────────────────────────────
-
-    def _create_sliders(
-        self, initial_angles: Dict[str, float]
-    ) -> tuple[List[viser.GuiInputHandle], List[float]]:
-        handles: List[viser.GuiInputHandle] = []
-        config: List[float] = []
-
-        for name, (lo, hi) in self.viser_urdf.get_actuated_joint_limits().items():
-            lo = lo if lo is not None else -np.pi
-            hi = hi if hi is not None else np.pi
-            init = np.clip(initial_angles.get(name, 0.0), lo, hi)
-
-            slider = self.server.gui.add_slider(
-                label=name, min=lo, max=hi, step=1e-3, initial_value=init,
-            )
-            slider.on_update(
-                lambda _, sh=handles: self.viser_urdf.update_cfg(
-                    np.array([s.value for s in sh])
-                )
-            )
-            handles.append(slider)
-            config.append(init)
-        return handles, config
 
     # ── joint access ──────────────────────────────────────────────────────────
 
@@ -314,17 +283,34 @@ class Core:
     # ── GUI helpers ──────────────────────────────────────────────────────────
 
     def _add_context_gui(self) -> None:
-        text_field = self.virtual_session.server.gui.add_text(
-            label="Context Input", initial_value=""
-        )
-        button = self.virtual_session.server.gui.add_button(label="Send Context")
+        gui = self.virtual_session.server.gui
+
+        with gui.add_folder("Context", expand_by_default=True):
+            text_field = gui.add_text(
+                label="Text", initial_value=""
+            )
+            image_field = gui.add_text(
+                label="Image path", initial_value=""
+            )
+            audio_field = gui.add_text(
+                label="Audio path", initial_value=""
+            )
+            button = gui.add_button(label="Send Context")
 
         @button.on_click
         def _(_):
-            val = text_field.value.strip()
-            if val:
-                self.context_store.push({"text": val})
+            ctx: dict = {}
+            if text_field.value.strip():
+                ctx["text"] = text_field.value.strip()
+            if image_field.value.strip():
+                ctx["image"] = image_field.value.strip()
+            if audio_field.value.strip():
+                ctx["audio"] = audio_field.value.strip()
+            if ctx:
+                self.context_store.push(ctx)
                 text_field.value = ""
+                image_field.value = ""
+                audio_field.value = ""
 
     def _update_status_display(self) -> None:
         if self._markdown is None:

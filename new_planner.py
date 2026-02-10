@@ -15,6 +15,7 @@ Any combination of keys is valid.
 
 from __future__ import annotations
 
+import base64
 import json
 import logging
 import os
@@ -123,6 +124,7 @@ class Planner:
             )
         self.client = OpenAI()
         self.model_name: str = "ft:gpt-4.1-nano-2025-04-14:tillkisir:ft-v1:CDsmIPYb"
+        self.model_name: str = "gpt-4.1"
         logger.info("Planner initialised  model=%s", self.model_name)
 
     # ── public pipelines ─────────────────────────────────────────────────────
@@ -189,6 +191,7 @@ class Planner:
             self.prompt_data["context_to_sequence"],
             input_data.model_dump(),
             ContextToSequenceOutput,
+            image_path=context.get("image"),
         )
         return result.motion_primitive_sequence
 
@@ -202,6 +205,7 @@ class Planner:
             self.prompt_data["context_and_sequence_to_animation_description"],
             input_data.model_dump(),
             ContextAndSequenceToAnimationDescriptionOutput,
+            image_path=context.get("image"),
         )
         return result.animation_descriptions
 
@@ -312,10 +316,10 @@ class Planner:
 
     # ── LLM call helpers ─────────────────────────────────────────────────────
 
-    def _upload_image(self, image_path: str) -> str:
+    @staticmethod
+    def _encode_image(image_path: str) -> str:
         with open(image_path, "rb") as f:
-            result = self.client.files.create(file=f, purpose="vision")
-        return result.id
+            return base64.b64encode(f.read()).decode("utf-8")
 
     def _call_llm(
         self,
@@ -327,8 +331,11 @@ class Planner:
     ) -> T:
         user_content: list[dict] = [{"type": "input_text", "text": json.dumps(input_data)}]
         if image_path:
-            file_id = self._upload_image(image_path)
-            user_content.append({"type": "input_image", "file_id": file_id})
+            b64 = self._encode_image(image_path)
+            user_content.append({
+                "type": "input_image",
+                "image_url": f"data:image/jpeg;base64,{b64}",
+            })
 
         messages = [
             {"role": "system", "content": system_prompt},
