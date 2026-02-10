@@ -125,6 +125,24 @@ class RobotBase(ABC):
             f"{type(self).__name__} does not implement execute_on_real_robot()"
         )
 
+    # ── optional: real-time data ──────────────────────────────────────────
+
+    def handle_rt(self, block) -> None:
+        """Handle real-time modulation of the current motion block.
+
+        Called every tick (~20 Hz) by the core's RT loop.  Override in
+        the robot subclass to implement robot-specific RT behaviour
+        (e.g. human tracking, gaze following, obstacle avoidance).
+
+        The block gives full access to the running DMP — the
+        implementation can read state, modify the goal, or adjust
+        any other DMP parameter directly.
+
+        Args:
+            block: The current ``TimelineBlock``.
+        """
+        pass  # no RT handling by default
+
     # ── optional: floating-base robots ───────────────────────────────────────
 
     def compute_base_transform(self, joint_array):

@@ -153,7 +153,6 @@ class Core:
         self.use_virtual_robot = use_virtual_robot
         self.short_pipeline = short_pipeline
         self.modulate = modulate
-        self.rt_gain: float = 0.01
 
         # Logging
         level = logging.DEBUG if debug else logging.INFO
@@ -196,7 +195,19 @@ class Core:
             self._safe(self._controller_loop(), "controller_loop"),
             self._safe(self._context_listener(), "context_listener"),
             self._safe(self._planner_trigger_loop(), "planner_trigger_loop"),
+            self._safe(self._rt_data_loop(), "rt_data_loop"),
         )
+
+    # ── real-time data loop ──────────────────────────────────────────────────
+
+    async def _rt_data_loop(self, hz: int = 20) -> None:
+        """Core-owned async loop that calls the robot's handle_rt()."""
+        interval = 1.0 / hz
+        while True:
+            block = self.timeline.get_current_block()
+            if block is not None:
+                self.robot.handle_rt(block)
+            await asyncio.sleep(interval)
 
     # ── controller loop ──────────────────────────────────────────────────────
 
@@ -209,7 +220,6 @@ class Core:
             block = self.timeline.get_current_block()
             if block:
                 block.step()
-                block.update_goal(self.timeline.rt_data, self.rt_gain)
                 state_y = block.dmp.get_state()["y"]
 
                 if cycle_even:

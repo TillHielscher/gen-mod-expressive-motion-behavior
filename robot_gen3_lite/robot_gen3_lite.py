@@ -11,6 +11,7 @@ import sys
 import yaml
 import numpy as np
 from pathlib import Path
+import logging
 
 # Add parent directory to path to import robot_base
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -55,6 +56,22 @@ class Gen3LiteRobot(RobotBase):
             'urdf_path',
             str(self.robot_dir / 'robot_gen3_lite_description' / 'robot_ren3_lite.urdf')
         )
+
+        # Real-time head-tracking state (simulated human target)
+        angle = np.radians(-45)
+        self._rt_targets = [
+            0.0,
+            angle/2,
+            angle,
+            angle/2,
+            0.0,
+            -angle/2,
+            -angle,
+            -angle/2,
+        ]
+        self._rt_hold_steps = 40   # 2 s at 20 Hz (core RT loop rate)
+        self._rt_step = 0
+        self._rt_index = 0
         
     def translate_trajectory_to_internal(self, external_traj, use_zero=False):
         """
@@ -132,6 +149,25 @@ class Gen3LiteRobot(RobotBase):
     def get_initial_joint_angles(self):
         """Return default joint angles in radians for the virtual session."""
         return {name: float(self.DEFAULT_JOINT_ANGLES[i]) for i, name in enumerate(self.JOINT_NAMES)}
+    
+    def handle_rt(self, block):
+        """Orient the base (joint_1) toward a cycling simulated target.
+
+        Directly modifies the block's DMP goal for joint_1 for cycling targets.
+        """
+        joint_idx = self.JOINT_NAME_TO_IDX["joint_1"]
+
+        target_angle = self._rt_targets[self._rt_index]
+
+        goal = block.dmp.goal.copy()
+        goal[joint_idx] = target_angle
+        block.dmp.set_principle_parameters(p_goal=goal)
+
+        # Advance the cycling target
+        self._rt_step += 1
+        if self._rt_step >= self._rt_hold_steps:
+            self._rt_step = 0
+            self._rt_index = (self._rt_index + 1) % len(self._rt_targets)
 
     def get_urdf_path(self):
         """Get path to URDF file."""

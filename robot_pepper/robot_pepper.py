@@ -80,7 +80,25 @@ class PepperRobot(RobotBase):
             'urdf_path',
             str(self.robot_dir / 'robot_pepper_description' / 'robot_pepper.urdf')
         )
-        
+
+        # Real-time head-tracking state (simulated human target)
+        yaw = np.radians(30)
+        pitch = np.radians(10)
+        self._rt_targets = [
+            ( yaw,  -pitch),  # bottom-right
+            ( yaw,   pitch),  # top-right
+            ( yaw/2, pitch),
+            ( 0,     pitch),
+            ( 0,    -pitch),
+            (-yaw/2,-pitch),
+            (-yaw,  -pitch),  # bottom-left
+            (-yaw,   pitch),  # top-left
+            ( 0,     pitch),
+        ]
+        self._rt_hold_steps = 40   # 2 s at 20 Hz (core RT loop rate)
+        self._rt_step = 0
+        self._rt_index = 0
+
     def translate_trajectory_to_internal(self, pepper_traj, use_zero=False):
         """
         Translate Pepper trajectory format to internal EDMP format.
@@ -171,6 +189,30 @@ class PepperRobot(RobotBase):
     def get_initial_joint_angles(self):
         """Return standing-init joint angles in radians for the virtual session."""
         return {k: np.deg2rad(v) for k, v in self.STAND_INIT_JOINT_ANGLES.items()}
+
+    def handle_rt(self, block):
+        """Head-tracking toward a cycling simulated target.
+
+        Directly modifies the block's DMP goal for HeadYaw / HeadPitch.
+        """
+        target_yaw, target_pitch = self._rt_targets[self._rt_index]
+
+        yaw_idx = self.JOINT_NAME_TO_IDX["HeadYaw"]
+        pitch_idx = self.JOINT_NAME_TO_IDX["HeadPitch"]
+
+        state = block.dmp.get_state()
+        goal = block.dmp.goal.copy()
+
+        gain = 0.01
+        goal[yaw_idx] += gain * (target_yaw - state["y"][yaw_idx])
+        goal[pitch_idx] += gain * (target_pitch - state["y"][pitch_idx])
+        block.dmp.set_principle_parameters(p_goal=goal)
+
+        # Advance the cycling target
+        self._rt_step += 1
+        if self._rt_step >= self._rt_hold_steps:
+            self._rt_step = 0
+            self._rt_index = (self._rt_index + 1) % len(self._rt_targets)
 
     def get_urdf_path(self):
         """Get path to Pepper's URDF file."""

@@ -31,9 +31,6 @@ class Timeline:
             idle_data_yaml_path=robot_description_path,
         )
 
-        # Real-time tracking offsets consumed by block.update_goal()
-        self.rt_data: dict = {"x": 0.0, "y": 0.0}
-
     # -- queue operations ------------------------------------------------------
 
     def append_block(self, block: TimelineBlock) -> None:
@@ -96,5 +93,3 @@ class Timeline:
             if last_goal is not None and len(last_goal) > 4:
                 self.current_block.dmp.goal[3] = last_goal[3]
                 self.current_block.dmp.goal[4] = last_goal[4]
-
-        self.current_block.update_goal(self.rt_data)

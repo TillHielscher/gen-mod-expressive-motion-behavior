@@ -4,7 +4,7 @@
 # Robot selection
 # Must match robot directory name: robot_{name}/robot_{name}.py with create_robot() function
 # Available robots: pepper, gen3_lite, go2
-robot: go2
+robot: gen3_lite
 
 # Operation modes
 use_real_robot: false          # Use real robot hardware (currently only supports Pepper)
@@ -12,7 +12,7 @@ use_virtual_robot: true        # Use virtual robot visualization
 
 # Pipeline configuration
 short_pipeline: false           # Use short planning pipeline (faster)
-modulate: true                 # Enable animation modulation
+modulate: false                 # Enable animation modulation
 debug: false                   # Enable debug logging
 
 # Paths

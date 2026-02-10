@@ -10,7 +10,6 @@ from __future__ import annotations
 import logging
 import os
 import random
-from copy import deepcopy
 from typing import Optional
 
 import numpy as np
@@ -42,13 +41,6 @@ class TimelineBlock:
     def is_complete(self) -> bool:
         state = self.dmp.get_state()
         return state["t"] >= state["tau"]
-
-    def update_goal(self, rt_data: dict, gain: float = 0.01) -> None:
-        """Shift the goal based on real-time tracking offsets."""
-        goal = deepcopy(self.dmp.goal)
-        goal[3] += gain * rt_data.get("x", 0.0)
-        goal[4] += gain * rt_data.get("y", 0.0)
-        self.dmp.set_principle_parameters(p_goal=goal)
 
     # -- loading ---------------------------------------------------------------
 
