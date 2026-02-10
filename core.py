@@ -128,7 +128,9 @@ class Core:
                     if self.use_real_robot:
                         self.robot.execute_on_real_robot(state_y)
                     if self.use_virtual_robot:
-                        self.robot.execute_state_on_virtual_robot(self.view, state_y)
+                        self.robot.execute_state_on_virtual_robot(
+                            self.view, state_y, block.name_identifier
+                        )
 
                 if block.is_complete():
                     self.timeline.advance_block()

@@ -12,7 +12,7 @@ use_virtual_robot: true        # Use virtual robot visualization
 
 # Pipeline configuration
 short_pipeline: false           # Use short planning pipeline (faster)
-modulate: false                 # Enable animation modulation
+modulate: true                 # Enable animation modulation
 debug: false                   # Enable debug logging
 
 # Paths

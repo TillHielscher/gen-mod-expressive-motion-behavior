@@ -4,23 +4,22 @@ capabilities: |
   Each leg has 3 joints (hip, thigh, calf) providing flexible body positioning and dynamic motions.
 
 primitive_lib:
-  point_right: Point or lean to the right with body tilt.
-  tilt_left: Tilt body to the left side.
-  stand_neutral: Return to neutral standing position.
+  dance: Dynamic dance movement.
+  look_right: Look or glance to the right and slightly up.
+  point_right: Distinctively point the torso to the right.
+  shake_hand: Shake hand movement.
+  tilt_left: Tilt torso to the left side.
 
 idle_lib:
-  - stand_neutral
-
-idle_lib_additions:
-  - stand_neutral
+  - default
 
 parameter_ranges:
   Anticipation:
     min: 0.0
-    max: 0.4
+    max: 0.1
   Follow_Through:
     min: 0.0
-    max: 3.0
+    max: 0.75
   Follow_Through_Data:
     relation1:
       target: FR_calf_joint
@@ -51,11 +50,11 @@ parameter_ranges:
       lower_limit: None
       upper_limit: None
   Arcs:
-    min: -5
-    max: 10
+    min: 0
+    max: 0
   Timing:
-    min: 0.5
-    max: 1.75
-  Exaggeration:
-    min: 0.25
+    min: 0.75
     max: 1.5
+  Exaggeration:
+    min: 0.5
+    max: 1.25

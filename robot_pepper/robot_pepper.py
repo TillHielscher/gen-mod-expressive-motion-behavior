@@ -251,7 +251,7 @@ class PepperRobot(RobotBase):
         names, limits_dict, mask = exec_data
         peppertoolbox.execute_state(session, state, names, limits_dict, mask)
     
-    def execute_state_on_virtual_robot(self, virtual_session, state):
+    def execute_state_on_virtual_robot(self, virtual_session, state, primitive_name: str = ""):
         """
         Execute state on virtual Pepper robot.
         

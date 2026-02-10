@@ -44,7 +44,11 @@ def go2_trajectory_to_demo(trajectory_path: Path, sample_dt=1 / 60):
 
 # Define trajectory directories to convert (now using q.txt + tick.txt format)
 trajectory_dirs = {
+    "dance": "data/dance",
+    "default": "data/default",
+    "look_right": "data/look_right",
     "point_right": "data/point_right",
+    "shake_hand": "data/shake_hand",
     "tilt_left": "data/tilt_left",
 }
 

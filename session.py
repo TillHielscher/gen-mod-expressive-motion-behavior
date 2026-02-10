@@ -108,7 +108,7 @@ class RobotBase(ABC):
     # ── abstract: virtual execution ──────────────────────────────────────────
 
     @abstractmethod
-    def execute_state_on_virtual_robot(self, virtual_session, state) -> None:
+    def execute_state_on_virtual_robot(self, virtual_session, state, primitive_name: str = "") -> None:
         """Push a DMP state array to the virtual session.
 
         The robot subclass is responsible for any index reordering or

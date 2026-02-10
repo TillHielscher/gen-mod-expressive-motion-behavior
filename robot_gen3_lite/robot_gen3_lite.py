@@ -204,7 +204,7 @@ class Gen3LiteRobot(RobotBase):
         joint_positions = state[:7]
         raise NotImplementedError("Real robot execution not yet implemented for Gen3 Lite")
     
-    def execute_state_on_virtual_robot(self, virtual_session, state):
+    def execute_state_on_virtual_robot(self, virtual_session, state, primitive_name: str = ""):
         """
         Execute state on virtual Gen3 Lite robot.
         
