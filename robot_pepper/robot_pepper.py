@@ -21,6 +21,8 @@ class PepperRobot(RobotBase):
     Handles Pepper-specific trajectory translation, joint mapping,
     and configuration management.
     """
+
+    # -- Definitions -----------------------------------------------------------
     
     # Pepper's default standing joint angles (in degrees)
     STAND_INIT_JOINT_ANGLES = {
@@ -77,23 +79,9 @@ class PepperRobot(RobotBase):
             str(self.robot_dir / 'robot_pepper_description' / 'robot_pepper.urdf')
         )
 
-        # Real-time head-tracking state (simulated human target)
-        yaw = np.radians(30)
-        pitch = np.radians(10)
-        self._rt_targets = [
-            ( yaw,  -pitch),  # bottom-right
-            ( yaw,   pitch),  # top-right
-            ( yaw/2, pitch),
-            ( 0,     pitch),
-            ( 0,    -pitch),
-            (-yaw/2,-pitch),
-            (-yaw,  -pitch),  # bottom-left
-            (-yaw,   pitch),  # top-left
-            ( 0,     pitch),
-        ]
-        self._rt_hold_steps = 40   # 2 s at 20 Hz (core RT loop rate)
-        self._rt_step = 0
-        self._rt_index = 0
+        self.prepare_handle_rt()  # Prepare real-time head-tracking state        
+    
+    # -- Robot description related ---------------------------------------------
     
     def get_joint_names(self):
         """Return ordered list of Pepper joint names."""
@@ -119,35 +107,21 @@ class PepperRobot(RobotBase):
     
     def get_initial_joint_angles(self):
         """Return standing-init joint angles in radians for the virtual session."""
-        return {k: np.deg2rad(v) for k, v in self.STAND_INIT_JOINT_ANGLES.items()}
-
-    def handle_rt(self, block):
-        """Head-tracking toward a cycling simulated target.
-
-        Directly modifies the block's DMP goal for HeadYaw / HeadPitch.
-        """
-        target_yaw, target_pitch = self._rt_targets[self._rt_index]
-
-        yaw_idx = self.JOINT_NAME_TO_IDX["HeadYaw"]
-        pitch_idx = self.JOINT_NAME_TO_IDX["HeadPitch"]
-
-        state = block.dmp.get_state()
-        goal = block.dmp.goal.copy()
-
-        gain = 0.01
-        goal[yaw_idx] += gain * (target_yaw - state["y"][yaw_idx])
-        goal[pitch_idx] += gain * (target_pitch - state["y"][pitch_idx])
-        block.dmp.set_principle_parameters(p_goal=goal)
-
-        # Advance the cycling target
-        self._rt_step += 1
-        if self._rt_step >= self._rt_hold_steps:
-            self._rt_step = 0
-            self._rt_index = (self._rt_index + 1) % len(self._rt_targets)
+        return {k: np.deg2rad(v) for k, v in self.STAND_INIT_JOINT_ANGLES.items()}    
 
     def get_urdf_path(self):
         """Get path to Pepper's URDF file."""
         return self.urdf_path
+    
+    # -- Real robot ------------------------------------------------------------
+    
+    def create_real_session(self):
+        pass # Real robot session creation not implemented in this example.
+    
+    def execute_state_on_real_robot(self, state):
+        pass  # Real robot execution not implemented in this example.
+
+    # -- Virtual robot ---------------------------------------------------------
     
     def execute_state_on_virtual_robot(self, virtual_session, state, primitive_name: str = ""):
         """Execute state on virtual Pepper robot.
@@ -164,6 +138,59 @@ class PepperRobot(RobotBase):
         converted_state = self.convert_joint_array_for_virtual(state)
         virtual_session.set_cfg_array(converted_state)
     
+    # -- Real time handling ----------------------------------------------------
+    
+    def prepare_handle_rt(self):
+        """Prepare for real-time head-tracking.
+
+        Initializes any necessary state for the handle_rt() method.
+        """
+        self.rt_goal_indices = [
+            self.get_joint_index("HeadYaw"),
+            self.get_joint_index("HeadPitch")
+        ]
+
+        # Real-time head-tracking state (simulated human target)
+        yaw = np.radians(30)
+        pitch = np.radians(10)
+        self._rt_targets = [
+            ( yaw,  -pitch),  # bottom-right
+            ( yaw,   pitch),  # top-right
+            ( yaw/2, pitch),
+            ( 0,     pitch),
+            ( 0,    -pitch),
+            (-yaw/2,-pitch),
+            (-yaw,  -pitch),  # bottom-left
+            (-yaw,   pitch),  # top-left
+            ( 0,     pitch),
+        ]
+        self._rt_hold_steps = 40   # 2 s at 20 Hz (core RT loop rate)
+        self._rt_step = 0
+        self._rt_index = 0
+    
+    def handle_rt(self, block):
+        """Head-tracking toward a cycling simulated target.
+
+        Directly modifies the block's DMP goal for HeadYaw / HeadPitch.
+        """
+        target_yaw, target_pitch = self._rt_targets[self._rt_index]
+
+        state = block.dmp.get_state()
+        goal = block.dmp.goal.copy()
+
+        gain = 0.01
+        goal[self.rt_goal_indices[0]] += gain * (target_yaw - state["y"][self.rt_goal_indices[0]])
+        goal[self.rt_goal_indices[1]] += gain * (target_pitch - state["y"][self.rt_goal_indices[1]])
+        block.dmp.set_principle_parameters(p_goal=goal)
+
+        # Advance the cycling target
+        self._rt_step += 1
+        if self._rt_step >= self._rt_hold_steps:
+            self._rt_step = 0
+            self._rt_index = (self._rt_index + 1) % len(self._rt_targets)
+
+    # -- Helper functions ------------------------------------------------------   
+
     @staticmethod
     def convert_joint_array_for_virtual(input_array):
         """Convert 48-dim internal joint array to Pepper's virtual representation.
@@ -199,7 +226,8 @@ class PepperRobot(RobotBase):
             raise ValueError("Input array must have 48 elements.")
 
         target_indices = [joint_names.index(joint) for joint in target_joints]
-        return input_array[target_indices]
+        return input_array[target_indices] 
+
 
 
 def create_robot(robot_name):

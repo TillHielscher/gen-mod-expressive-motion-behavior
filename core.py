@@ -62,8 +62,7 @@ class Core:
 
         # Sub-systems
         self.timeline = Timeline(
-            robot.get_primitive_path(),
-            robot.get_robot_description_path(),
+            robot,
         )
         self.planner = Planner(
             robot,

@@ -40,14 +40,7 @@ primitive_lib:
 
 
 idle_lib:
-  - Zero
-  
-
-idle_lib_additions:
-  - Zero
-  - copyOfZero
-  - 06_LookBumpersRight_01
-  - 06_Looking_around_01
+  - default
 
 
 parameter_ranges:

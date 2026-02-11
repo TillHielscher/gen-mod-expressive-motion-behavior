@@ -21,6 +21,8 @@ class Gen3LiteRobot(RobotBase):
     Handles Gen3 Lite-specific trajectory translation, joint mapping,
     and configuration management.  This is a 7-DOF robot arm.
     """
+
+    # -- Definitions -----------------------------------------------------------
     
     # Gen3 Lite's default joint angles (in radians)
     DEFAULT_JOINT_ANGLES = np.array([0.0, -0.6, 1.9, -1.6, 2.0, 0.0, 0.5])
@@ -52,21 +54,7 @@ class Gen3LiteRobot(RobotBase):
             str(self.robot_dir / 'robot_gen3_lite_description' / 'robot_gen3_lite.urdf')
         )
 
-        # Real-time head-tracking state (simulated human target)
-        angle = np.radians(-45)
-        self._rt_targets = [
-            0.0,
-            angle/2,
-            angle,
-            angle/2,
-            0.0,
-            -angle/2,
-            -angle,
-            -angle/2,
-        ]
-        self._rt_hold_steps = 40   # 2 s at 20 Hz (core RT loop rate)
-        self._rt_step = 0
-        self._rt_index = 0
+    # -- Robot description related ---------------------------------------------
     
     def get_joint_names(self):
         """Return ordered list of Gen3 Lite joint names."""
@@ -92,29 +80,20 @@ class Gen3LiteRobot(RobotBase):
         """Return default joint angles in radians for the virtual session."""
         return {name: float(self.DEFAULT_JOINT_ANGLES[i]) for i, name in enumerate(self.JOINT_NAMES)}
     
-    def handle_rt(self, block):
-        """Orient the base (joint_1) toward a cycling simulated target.
-
-        Directly modifies the block's DMP goal for joint_1 for cycling targets.
-        """
-        joint_idx = self.JOINT_NAME_TO_IDX["joint_1"]
-
-        target_angle = self._rt_targets[self._rt_index]
-
-        goal = block.dmp.goal.copy()
-        goal[joint_idx] = target_angle
-        block.dmp.set_principle_parameters(p_goal=goal)
-
-        # Advance the cycling target
-        self._rt_step += 1
-        if self._rt_step >= self._rt_hold_steps:
-            self._rt_step = 0
-            self._rt_index = (self._rt_index + 1) % len(self._rt_targets)
-
     def get_urdf_path(self):
         """Get path to URDF file."""
         return self.urdf_path
     
+    # -- Real robot ------------------------------------------------------------
+    
+    def create_real_session(self):
+        pass # Real robot session creation not implemented in this example.
+    
+    def execute_state_on_real_robot(self, state):
+        pass  # Real robot execution not implemented in this example.
+
+    # -- Virtual robot ---------------------------------------------------------
+
     def execute_state_on_virtual_robot(self, virtual_session, state, primitive_name: str = ""):
         """Execute state on virtual Gen3 Lite robot.
 
@@ -129,7 +108,52 @@ class Gen3LiteRobot(RobotBase):
         # Update virtual session configuration (similar to Pepper's set_cfg_array)
         virtual_session.set_cfg_array(joint_positions)
 
+    # -- Real time handling ----------------------------------------------------
 
+    def prepare_handle_rt(self):
+        """Prepare for real-time head-tracking.
+
+        Initializes any necessary state for the handle_rt() method.
+        """
+        self.rt_goal_indices = [
+            self.get_joint_index("joint_1"),  # Base rotation for horizontal tracking
+        ]
+
+        # Real-time head-tracking state (simulated human target)
+        angle = np.radians(-45)
+        self._rt_targets = [
+            0.0,
+            angle/2,
+            angle,
+            angle/2,
+            0.0,
+            -angle/2,
+            -angle,
+            -angle/2,
+        ]
+        self._rt_hold_steps = 40   # 2 s at 20 Hz (core RT loop rate)
+        self._rt_step = 0
+        self._rt_index = 0
+    
+    def handle_rt(self, block):
+        """Orient the base (joint_1) toward a cycling simulated target.
+
+        Directly modifies the block's DMP goal for joint_1 for cycling targets.
+        """
+
+        target_angle = self._rt_targets[self._rt_index]
+
+        goal = block.dmp.goal.copy()
+        goal[self.rt_goal_indices[0]] = target_angle
+        block.dmp.set_principle_parameters(p_goal=goal)
+
+        # Advance the cycling target
+        self._rt_step += 1
+        if self._rt_step >= self._rt_hold_steps:
+            self._rt_step = 0
+            self._rt_index = (self._rt_index + 1) % len(self._rt_targets)
+
+    
 def create_robot(robot_name):
     """Factory function to create a Gen3 Lite robot instance.
 

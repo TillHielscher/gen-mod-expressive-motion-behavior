@@ -25,6 +25,8 @@ class Go2Robot(RobotBase):
     Handles Go2-specific trajectory translation, joint mapping,
     and configuration management.  This is a 12-DOF quadruped (4 legs × 3 joints).
     """
+
+    # -- Definitions -----------------------------------------------------------
     
     # Go2's default standing joint angles (in radians)
     # Format: [FR_hip, FR_thigh, FR_calf, FL_hip, FL_thigh, FL_calf, 
@@ -56,6 +58,18 @@ class Go2Robot(RobotBase):
     
     # Mapping from joint names to indices
     JOINT_NAME_TO_IDX = {name: idx for idx, name in enumerate(JOINT_NAMES)}
+
+    # Manual height offset (metres) added to the optimised Z position.
+    # Negative values push the robot closer to the ground, positive lifts it.
+    GROUND_Z_OFFSET: float = -0.33
+
+    # Primitives where specific feet are lifted and must be excluded from
+    # the ground-contact optimisation.  Maps primitive name → list of URDF
+    # foot link names to ignore.  Uses fuzzy substring matching (same as
+    # TimelineBlock), so "shake_hand" matches "shake_hand_1", etc.
+    RAISED_FEET: dict[str, list[str]] = {
+        "shake_hand":  ["FR_foot"],
+    }
     
     def __init__(self, robot_dir="robot_go2", enable_floating_base=True):
         """Initialize Go2 robot.
@@ -70,27 +84,16 @@ class Go2Robot(RobotBase):
         # URDF path can be overridden, but defaults to description folder inside robot directory
         self.urdf_path = self.config.get(
             'urdf_path',
-            str(self.robot_dir / 'robot_go2_description' / 'go2_description.urdf')
+            str(self.robot_dir / 'robot_go2_description' / 'robot_go2.urdf')
         )
-        
-        # Floating base visualization - enabled by default for quadrupeds
-        self.enable_floating_base = enable_floating_base
+
+        self.prepare_handle_rt()        
         
         # Load URDF for FK computation (only if floating base enabled)
         self._urdf = None
-        if self.enable_floating_base:
-            self._load_urdf()
+        self._load_urdf()       
         
-        # Foot link names in URDF
-        self.foot_links = ["FL_foot", "FR_foot", "RL_foot", "RR_foot"]
-        
-    def _load_urdf(self):
-        """Load URDF for forward kinematics."""
-        try:
-            self._urdf = URDF.load(self.urdf_path)
-        except Exception as e:
-            print(f"Warning: Could not load URDF for FK computation: {e}")
-            self._urdf = None
+    # -- Robot description related ---------------------------------------------
     
     def get_joint_names(self):
         """Return ordered list of Go2 joint names."""
@@ -120,6 +123,16 @@ class Go2Robot(RobotBase):
         """Get path to URDF file."""
         return self.urdf_path
     
+    # -- Real robot ------------------------------------------------------------
+    
+    def create_real_session(self):
+        pass # Real robot session creation not implemented in this example.
+    
+    def execute_state_on_real_robot(self, state):
+        pass  # Real robot execution not implemented in this example.
+
+    # -- Virtual robot ---------------------------------------------------------
+
     def execute_state_on_virtual_robot(self, virtual_session, state, primitive_name: str = ""):
         """Execute state on virtual Go2 robot.
 
@@ -142,12 +155,37 @@ class Go2Robot(RobotBase):
         virtual_session.set_cfg_array(converted_state)
         
         # Compute floating-base transform (feet planted on ground)
-        if self.enable_floating_base:
-            base_transform = self.compute_base_transform(converted_state, primitive_name)
-            if base_transform is not None:
-                position, quaternion = base_transform
-                virtual_session.set_base_transform(position, quaternion)
+        base_transform = self.compute_base_transform(converted_state, primitive_name)
+        if base_transform is not None:
+            position, quaternion = base_transform
+            virtual_session.set_base_transform(position, quaternion)
     
+    # -- Real time handling ----------------------------------------------------
+
+    def prepare_handle_rt(self):
+        """Prepare for real-time head-tracking.
+
+        Initializes any necessary state for the handle_rt() method.
+        """
+        self.rt_goal_indices = []  # No real-time adjustments for Go2 in this implementation
+
+    def handle_rt(self, block):
+        pass  # No real-time adjustments for Go2 in this implementation
+    
+    # -- Helper functions ------------------------------------------------------    
+
+    def _load_urdf(self):
+        """Load URDF for forward kinematics."""
+        try:
+            self._urdf = URDF.load(self.urdf_path)
+            
+        except Exception as e:
+            print(f"Warning: Could not load URDF for FK computation: {e}")
+            self._urdf = None
+        
+        # Foot link names in URDF
+        self.foot_links = ["FL_foot", "FR_foot", "RL_foot", "RR_foot"]
+
     @staticmethod
     def convert_joint_array_for_virtual(input_array):
         """Convert 12-dim DMP joint array to Go2's URDF joint order.
@@ -205,19 +243,7 @@ class Go2Robot(RobotBase):
             return foot_positions
         except Exception as e:
             print(f"Warning: FK computation failed: {e}")
-            return None
-    
-    # Manual height offset (metres) added to the optimised Z position.
-    # Negative values push the robot closer to the ground, positive lifts it.
-    GROUND_Z_OFFSET: float = -0.33
-
-    # Primitives where specific feet are lifted and must be excluded from
-    # the ground-contact optimisation.  Maps primitive name → list of URDF
-    # foot link names to ignore.  Uses fuzzy substring matching (same as
-    # TimelineBlock), so "shake_hand" matches "shake_hand_1", etc.
-    RAISED_FEET: dict[str, list[str]] = {
-        "shake_hand":  ["FR_foot"],
-    }
+            return None    
 
     def compute_base_transform(self, joint_array, primitive_name: str = ""):
         """Compute base transform to keep ground-contact feet planted.

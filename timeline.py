@@ -120,15 +120,18 @@ class TimelineBlock:
 class Timeline:
     """FIFO queue of motion blocks with seamless joining."""
 
-    def __init__(self, primitive_path: str, robot_description_path: str) -> None:
-        self.primitive_path = primitive_path
-        self.robot_description_path = robot_description_path
+    def __init__(self, robot) -> None: 
+
+        self.robot = robot       
+            
+        self.primitive_path = self.robot.get_primitive_path()
+        self.robot_description_path = self.robot.get_robot_description_path()
 
         self.plan: list[TimelineBlock] = []
         self.current_block: TimelineBlock = TimelineBlock(
             "idle",
-            primitive_path=primitive_path,
-            idle_data_yaml_path=robot_description_path,
+            primitive_path=self.primitive_path,
+            idle_data_yaml_path=self.robot_description_path,
         )
 
     # -- Queue operations ------------------------------------------------------
@@ -173,22 +176,18 @@ class Timeline:
                 idle_data_yaml_path=self.robot_description_path,
             )
 
-            # Add subtle randomisation to zero-motion idle primitives
-            if self.current_block.name_identifier.lower().startswith("zero"):
-                self.current_block.dmp.set_principle_parameters(p_rand=400)
-                self.current_block.dmp.forcing_term.w_original = self.current_block.dmp.forcing_term.w
-                self.current_block.dmp.set_principle_parameters(p_arc=40)
-                n = self.current_block.dmp.n_dim
-                exa = np.ones(n)
-                exa[:min(5, n)] = [0.3, 0.3, 0.4, 0.2, 0.2][:min(5, n)]
-                self.current_block.dmp.set_principle_parameters(p_exa=exa)
-
         # Seamless state joining
         if last_state is not None:
             self.current_block.dmp.y = last_state["y"]
             self.current_block.dmp.yd = last_state["yd"]
             self.current_block.dmp.ydd = last_state["ydd"]
-            # Preserve tracked goal channels (head yaw / pitch when present)
-            if last_goal is not None and len(last_goal) > 4:
-                self.current_block.dmp.goal[3] = last_goal[3]
-                self.current_block.dmp.goal[4] = last_goal[4]
+
+            # Preserve RT-managed goal channels across block transitions
+            if last_goal is not None:
+                for idx in self.robot.rt_goal_indices:
+                    if idx < len(last_goal):
+                        self.current_block.dmp.goal[idx] = last_goal[idx]
+            # # Preserve tracked goal channels (head yaw / pitch when present)
+            # if last_goal is not None and len(last_goal) > 4:
+            #     self.current_block.dmp.goal[3] = last_goal[3]
+            #     self.current_block.dmp.goal[4] = last_goal[4]

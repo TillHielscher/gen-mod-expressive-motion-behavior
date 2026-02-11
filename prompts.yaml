@@ -107,7 +107,7 @@ animation_description_to_animation_principle_description: |
     A structured JSON containing the fields:
     - "motion_primitive": The motion primitive to rate (string).
     - "animation_description": A list of short, expressive descriptions of how that motion should be animated (list of strings).
-    - "principles": A dictionary of animation principles for which you need to provide ratings. Each principle includes a scale description and a scale range:
+    - "principles": A dictionary of animation principles for which you need to provide ratings. Each principle includes a scale description and a scale range which is binding.
 
   Task:
     Align the input "animation_description"-"motion_primitive" pair with the commonly known principles of animation.
@@ -118,12 +118,12 @@ animation_description_to_animation_principle_description: |
 
   Output:
     A structured JSON containing the fields:
-    - "Anticipation": An integer rating for the Anticipation principle based on the provided scale.
-    - "Arcs": An integer rating for the Arcs principle based on the provided scale.
-    - "Exaggeration": An integer rating for the Exaggeration principle based on the provided scale.
-    - "Follow_Through": An integer rating for the Follow_Through principle based on the provided scale.
+    - "Anticipation": An integer rating for the Anticipation principle limited to the provided scale.
+    - "Arcs": An integer rating for the Arcs principle limited to the provided scale.
+    - "Exaggeration": An integer rating for the Exaggeration principle limited to the provided scale.
+    - "Follow_Through": An integer rating for the Follow_Through principle limited to the provided scale.
     - "Slow_In_Slow_Out": An integer rating enabling (1) or disabling (0) the Slow In Slow Out principle.
-    - "Timing": An integer rating for the Timing principle based on the provided scale.
+    - "Timing": An integer rating for the Timing principle limited to the provided scale.
 
 
 principles:

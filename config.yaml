@@ -1,5 +1,4 @@
-# LLAG System Configuration
-# Configuration for Language-Guided Animation Generation System
+# Configuration
 
 # Robot selection
 # Must match robot directory name: robot_{name}/robot_{name}.py with create_robot() function

@@ -137,6 +137,17 @@ class RobotBase(ABC):
 
     # -- Optional: real-time data ----------------------------------------------
 
+    def prepare_handle_rt(self) -> None:
+        """Prepare state needed by :meth:`handle_rt`.
+
+        Called once during ``__init__``.  Must set ``self.rt_goal_indices``
+        to a list of joint indices whose DMP goals are managed in real
+        time (these are preserved across block transitions).
+
+        Default: no RT-managed joints.
+        """
+        self.rt_goal_indices: list[int] = []
+
     def handle_rt(self, block) -> None:
         """Handle real-time modulation of the current motion block.
 
@@ -147,7 +158,7 @@ class RobotBase(ABC):
         Args:
             block: The current ``TimelineBlock``.
         """
-        pass  # no RT handling by default
+        pass
 
     # -- Optional: floating-base robots ----------------------------------------
 
@@ -348,6 +359,8 @@ class ViserView:
             for principle, info in self._principle_ranges.items():
                 lo, hi = info["scale_range"]
                 initial = unmapped.get(principle, 0)
+                # clip initial to valid range
+                initial = max(min(initial, hi), lo)
                 slider = gui.add_slider(
                     label=principle,
                     min=lo, max=hi, step=1,
