@@ -2,7 +2,9 @@
 Session – robot base interface and Viser-based virtual session.
 
 ``RobotBase``
-    Abstract interface that every robot module must implement.
+    Abstract interface that every robot module must implement.  Includes
+    automatic kinematic analysis to derive ``Follow_Through_Data`` from
+    the URDF when it is not already present in the robot YAML.
 
 ``ViserView``
     Unified Viser server providing the 3D URDF viewer **and** all GUI panels
@@ -12,7 +14,10 @@ Session – robot base interface and Viser-based virtual session.
 from __future__ import annotations
 
 import logging
+import xml.etree.ElementTree as ET
 from abc import ABC, abstractmethod
+from collections import defaultdict
+from math import cos, sin
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
@@ -29,6 +34,205 @@ logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
+# Kinematic relation analysis (auto-compute Follow_Through_Data)
+# ---------------------------------------------------------------------------
+
+def _rpy_to_matrix(r: float, p: float, y: float) -> np.ndarray:
+    """Convert roll-pitch-yaw angles to a 3×3 rotation matrix."""
+    Rz = np.array([[cos(y), -sin(y), 0],
+                   [sin(y),  cos(y), 0],
+                   [0,       0,      1]])
+    Ry = np.array([[cos(p), 0, sin(p)],
+                   [0,       1, 0],
+                   [-sin(p), 0, cos(p)]])
+    Rx = np.array([[1, 0, 0],
+                   [0, cos(r), -sin(r)],
+                   [0, sin(r),  cos(r)]])
+    return Rz @ Ry @ Rx
+
+
+def _axis_angle_matrix(axis: np.ndarray, theta: float) -> np.ndarray:
+    """Rodrigues formula for rotation about an arbitrary axis."""
+    axis = axis / np.linalg.norm(axis)
+    x, y, z = axis
+    c, s, C = cos(theta), sin(theta), 1 - cos(theta)
+    return np.array([
+        [c + x * x * C, x * y * C - z * s, x * z * C + y * s],
+        [y * x * C + z * s, c + y * y * C, y * z * C - x * s],
+        [z * x * C - y * s, z * y * C + x * s, c + z * z * C],
+    ])
+
+
+class _URDFKinematicAnalyzer:
+    """Parse a URDF and discover axis-alignment relations between revolute joints.
+
+    Used internally by :class:`RobotBase` to auto-generate ``Follow_Through_Data``
+    when it is not already present in the robot YAML.
+    """
+
+    def __init__(self, urdf_path: str, active_joint_names: Optional[List[str]] = None) -> None:
+        self.joints: dict = {}
+        self.child_map: dict[str, list[str]] = defaultdict(list)
+        self.parent_map: dict[str, str] = {}
+        self._active_joint_names = set(active_joint_names) if active_joint_names else None
+        self._parse_urdf(urdf_path)
+
+    # -- URDF parsing ---------------------------------------------------------
+
+    def _parse_urdf(self, urdf_path: str) -> None:
+        tree = ET.parse(urdf_path)
+        root = tree.getroot()
+        for joint in root.findall("joint"):
+            jname = joint.attrib["name"]
+            jtype = joint.attrib["type"]
+            if jtype != "revolute":
+                continue
+
+            parent = joint.find("parent").attrib["link"]
+            child = joint.find("child").attrib["link"]
+
+            origin_tag = joint.find("origin")
+            rpy = ([float(x) for x in origin_tag.attrib.get("rpy", "0 0 0").split()]
+                   if origin_tag is not None else [0.0, 0.0, 0.0])
+
+            axis_tag = joint.find("axis")
+            axis = np.array([float(x) for x in axis_tag.attrib.get("xyz", "0 0 1").split()])
+            axis = axis / np.linalg.norm(axis)
+
+            limit_tag = joint.find("limit")
+            lower = float(limit_tag.attrib.get("lower", -np.pi)) if limit_tag is not None else -np.pi
+            upper = float(limit_tag.attrib.get("upper", np.pi)) if limit_tag is not None else np.pi
+
+            self.joints[jname] = {
+                "type": jtype,
+                "parent": parent,
+                "child": child,
+                "axis_local": axis,
+                "rpy": rpy,
+                "lower": lower,
+                "upper": upper,
+            }
+            self.child_map[parent].append(jname)
+            self.parent_map[child] = jname
+
+    # -- Forward kinematics (axis only) ----------------------------------------
+
+    def _forward_axis(self, joint_name: str, joint_values: dict) -> np.ndarray:
+        """Compute the world-frame axis of *joint_name* given *joint_values*."""
+        chain: list[str] = []
+        cur = joint_name
+        while cur in self.joints:
+            chain.append(cur)
+            parent_link = self.joints[cur]["parent"]
+            if parent_link not in self.parent_map:
+                break
+            cur = self.parent_map[parent_link]
+        chain.reverse()
+
+        T = np.eye(3)
+        for j in chain:
+            info = self.joints[j]
+            T = T @ _rpy_to_matrix(*info["rpy"])
+            if info["type"] == "revolute":
+                T = T @ _axis_angle_matrix(info["axis_local"], joint_values.get(j, 0.0))
+        axis_global = T @ self.joints[joint_name]["axis_local"]
+        return axis_global / np.linalg.norm(axis_global)
+
+    # -- Relation discovery ----------------------------------------------------
+
+    def _is_active(self, joint_name: str) -> bool:
+        """Return True if *joint_name* belongs to the robot's active joints."""
+        if self._active_joint_names is None:
+            return True
+        return joint_name in self._active_joint_names
+
+    def find_relations(self, samples: int = 200, tol: float = 0.95) -> list[dict]:
+        """Discover axis-aligned joint relations.
+
+        Returns a list of dicts compatible with the ``Follow_Through_Data``
+        YAML format (keys: target, source, inverse, condition, lower_limit,
+        upper_limit).
+        """
+        relations: list[dict] = []
+
+        # 1. Conditional chains: source → condition → target
+        for cond_name, cond in self.joints.items():
+            if cond["type"] != "revolute":
+                continue
+            children = self.child_map.get(cond["child"], [])
+            if not children:
+                continue
+            parent_joint = self.parent_map.get(cond["parent"])
+            if parent_joint is None:
+                continue
+
+            for target in children:
+                source = parent_joint
+                if not (self._is_active(source) and self._is_active(target) and self._is_active(cond_name)):
+                    continue
+
+                cond_vals = np.linspace(cond["lower"], cond["upper"], samples)
+                current_interval = None
+
+                for val in cond_vals:
+                    joint_values = {cond_name: val}
+                    src_axis = self._forward_axis(source, joint_values)
+                    tgt_axis = self._forward_axis(target, joint_values)
+                    dot = float(np.dot(src_axis, tgt_axis))
+
+                    if abs(dot) >= tol:
+                        if current_interval is None:
+                            current_interval = [val, val]
+                        else:
+                            current_interval[1] = val
+                    else:
+                        if current_interval is not None:
+                            relations.append({
+                                "target": target,
+                                "source": source,
+                                "inverse": False,
+                                "condition": cond_name,
+                                "lower_limit": float(current_interval[0]),
+                                "upper_limit": float(current_interval[1]),
+                            })
+                            current_interval = None
+
+                if current_interval is not None:
+                    relations.append({
+                        "target": target,
+                        "source": source,
+                        "inverse": False,
+                        "condition": cond_name,
+                        "lower_limit": float(current_interval[0]),
+                        "upper_limit": float(current_interval[1]),
+                    })
+
+        # 2. Direct parent→child pairs (no condition)
+        for joint_name, joint in self.joints.items():
+            parent_joint = self.parent_map.get(joint["parent"])
+            if parent_joint is None:
+                continue
+            source, target = parent_joint, joint_name
+            if not (self._is_active(source) and self._is_active(target)):
+                continue
+
+            src_axis = self._forward_axis(source, {})
+            tgt_axis = self._forward_axis(target, {})
+            dot = float(np.dot(src_axis, tgt_axis))
+            if abs(dot) >= tol:
+                relations.append({
+                    "target": target,
+                    "source": source,
+                    "inverse": bool(dot < 0),
+                    "condition": None,
+                    "lower_limit": None,
+                    "upper_limit": None,
+                })
+
+        return relations
+
+
+# ---------------------------------------------------------------------------
 # RobotBase
 # ---------------------------------------------------------------------------
 
@@ -39,6 +243,12 @@ class RobotBase(ABC):
       The robot only supplies the URDF path, initial joint angles, and a
       method to convert internal DMP state → virtual-session joint array.
     * **Real-robot session** is entirely owned by the robot subclass.
+    * **Follow_Through_Data** is automatically computed from the URDF
+      when not present in the robot YAML.  Subclasses should call
+      ``self._ensure_follow_through_data()`` at the end of their
+      ``__init__`` (after ``self.urdf_path`` is set).  The computed
+      relations are written back to the YAML so the analysis only
+      runs once.
     """
 
     def __init__(self, robot_dir: str) -> None:
@@ -70,6 +280,130 @@ class RobotBase(ABC):
 
     def get_parameter_ranges(self) -> dict:
         return self.config.get("parameter_ranges", {})
+
+    def _ensure_follow_through_data(self) -> None:
+        """Auto-compute ``Follow_Through_Data`` from the URDF if absent.
+
+        Call this at the end of the subclass ``__init__`` (after
+        ``self.urdf_path`` and joint definitions are ready).  If the
+        robot YAML already contains ``Follow_Through_Data`` the method
+        returns immediately.  Otherwise it analyses the URDF, computes
+        the kinematic relations, stores them in ``self.config``, **and**
+        writes them back to the YAML file so the computation only
+        happens once.
+        """
+        ranges = self.config.setdefault("parameter_ranges", {})
+        if "Follow_Through_Data" in ranges:
+            logger.debug("Follow_Through_Data already present in config — skipping auto-computation.")
+            return
+
+        try:
+            urdf_path = self.get_urdf_path()
+            joint_names = self.get_joint_names()
+        except Exception:
+            logger.warning("Cannot auto-compute Follow_Through_Data: URDF path or joint names unavailable.")
+            return
+
+        if not Path(urdf_path).exists():
+            logger.warning("Cannot auto-compute Follow_Through_Data: URDF not found at %s", urdf_path)
+            return
+
+        logger.info("Auto-computing Follow_Through_Data from URDF: %s", urdf_path)
+        try:
+            analyzer = _URDFKinematicAnalyzer(urdf_path, active_joint_names=joint_names)
+            relations = analyzer.find_relations()
+        except Exception:
+            logger.exception("Failed to auto-compute Follow_Through_Data.")
+            return
+
+        if not relations:
+            logger.info("No kinematic relations found for Follow_Through_Data.")
+            return
+
+        follow_data: dict = {}
+        for idx, rel in enumerate(relations, 1):
+            follow_data[f"relation{idx}"] = {
+                "target": rel["target"],
+                "source": rel["source"],
+                "inverse": rel["inverse"],
+                "condition": rel["condition"] if rel["condition"] is not None else "None",
+                "lower_limit": rel["lower_limit"],
+                "upper_limit": rel["upper_limit"],
+            }
+        ranges["Follow_Through_Data"] = follow_data
+        logger.info("Auto-computed %d Follow_Through relation(s).", len(relations))
+
+        # Persist to the YAML file so it is only computed once.
+        self._write_follow_through_to_yaml(follow_data)
+
+    def _write_follow_through_to_yaml(self, follow_data: dict) -> None:
+        """Insert ``Follow_Through_Data`` into the robot YAML without reformatting.
+
+        Locates the ``Follow_Through:`` block inside ``parameter_ranges``
+        (the one with ``min``/``max`` sub-keys) and inserts the new block
+        right after its ``max:`` line, preserving every other byte of the
+        original file.
+        """
+        yaml_path = self._config_path()
+        if yaml_path is None:
+            logger.warning("Could not locate robot YAML — computed data kept in memory only.")
+            return
+
+        try:
+            with open(yaml_path, "r") as f:
+                lines = f.readlines()
+
+            # --- find insertion point: after the "max:" line of Follow_Through ---
+            import re
+            insert_idx: Optional[int] = None
+            in_follow_through = False
+            for i, line in enumerate(lines):
+                stripped = line.strip()
+                # Match "Follow_Through:" as a top-level parameter_ranges key
+                # (2-space indent), but NOT "Follow_Through_Data:"
+                if re.match(r"^\s{2}Follow_Through:\s*$", line):
+                    in_follow_through = True
+                    continue
+                if in_follow_through:
+                    if stripped.startswith("max:"):
+                        insert_idx = i + 1
+                        break
+                    # If we hit another key at the same indent before "max:",
+                    # the structure is unexpected — bail out.
+                    if stripped and not stripped.startswith("min:") and not stripped.startswith("#"):
+                        break
+
+            if insert_idx is None:
+                logger.warning(
+                    "Could not find Follow_Through max: line in %s — "
+                    "computed data kept in memory only.", yaml_path,
+                )
+                return
+
+            # --- format the block as YAML text (2-space base indent) ---
+            block_lines = ["  Follow_Through_Data:\n"]
+            for rel_key, rel in follow_data.items():
+                block_lines.append(f"    {rel_key}:\n")
+                for k, v in rel.items():
+                    block_lines.append(f"      {k}: {v}\n")
+
+            lines[insert_idx:insert_idx] = block_lines
+
+            with open(yaml_path, "w") as f:
+                f.writelines(lines)
+            logger.info("Follow_Through_Data written to %s", yaml_path)
+        except Exception:
+            logger.exception("Failed to write Follow_Through_Data to %s", yaml_path)
+
+    def _config_path(self) -> Optional[Path]:
+        """Return the path to the robot YAML config file, or *None*."""
+        for candidate in (
+            self.robot_dir / "robot_data.yaml",
+            self.robot_dir / f"{self.robot_dir.name}.yaml",
+        ):
+            if candidate.exists():
+                return candidate
+        return None
 
     def get_primitive_path(self) -> str:
         if "primitives_path" in self.config:

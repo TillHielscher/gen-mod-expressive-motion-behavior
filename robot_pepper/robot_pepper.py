@@ -79,6 +79,7 @@ class PepperRobot(RobotBase):
             str(self.robot_dir / 'robot_pepper_description' / 'robot_pepper.urdf')
         )
 
+        self._ensure_follow_through_data()
         self.prepare_handle_rt()  # Prepare real-time head-tracking state        
     
     # -- Robot description related ---------------------------------------------

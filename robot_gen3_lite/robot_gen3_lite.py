@@ -54,6 +54,8 @@ class Gen3LiteRobot(RobotBase):
             str(self.robot_dir / 'robot_gen3_lite_description' / 'robot_gen3_lite.urdf')
         )
 
+        self._ensure_follow_through_data()
+
     # -- Robot description related ---------------------------------------------
     
     def get_joint_names(self):

@@ -28,7 +28,9 @@ idle_lib:
 # Required keys: Anticipation, Follow_Through, Arcs, Timing, Exaggeration.
 # Each needs a min and max that define the robot's comfortable range.
 #
-# Optional key: Follow_Through_Data (kinematic chain relations).
+# Follow_Through_Data (kinematic chain relations) is auto-computed from the
+# URDF on first load and written back to this file.  You may also provide it
+# manually; if the key is already present, auto-computation is skipped.
 parameter_ranges:
   Anticipation:
     min: 0.0
@@ -36,6 +38,8 @@ parameter_ranges:
   Follow_Through:
     min: 0.0
     max: 5.0
+  # Follow_Through_Data is auto-computed from the URDF on first load.
+  # To override, uncomment and fill in manually:
   # Follow_Through_Data:
   #   relation1:
   #     target: joint_2          # Joint that follows

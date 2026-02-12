@@ -10,6 +10,9 @@ Minimal checklist:
   3. Record trajectories, convert to DMPs, place in ``robot_{name}_primitives/``.
   4. Fill in ``robot_{name}.yaml`` (capabilities, primitive_lib, parameter_ranges).
   5. Set ``robot: {name}`` in ``config.yaml``.
+
+Note: ``Follow_Through_Data`` in ``parameter_ranges`` is auto-computed from
+the URDF on first load and written back to the YAML.  No manual entry needed.
 """
 
 import sys
@@ -63,6 +66,7 @@ class TemplateRobot(RobotBase):
             str(self.robot_dir / "robot_template_description" / "robot_template.urdf"),
         )
 
+        self._ensure_follow_through_data()
         self.prepare_handle_rt()
 
     # -- Robot description related ---------------------------------------------

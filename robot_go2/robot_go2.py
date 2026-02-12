@@ -87,6 +87,7 @@ class Go2Robot(RobotBase):
             str(self.robot_dir / 'robot_go2_description' / 'robot_go2.urdf')
         )
 
+        self._ensure_follow_through_data()
         self.prepare_handle_rt()        
         
         # Load URDF for FK computation (only if floating base enabled)
