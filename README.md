@@ -1,17 +1,16 @@
 # Generation and Modulation of Expressive Robot Motion Behavior
 
-
-The method aligns expressive motion behavior with an open-ended, multimodal interaction context. By automating the parametrization of animation DMPs, the method combines meaningful sequence generation with context-aware expressivity modulation. The implementation decouples control from specific robot hardware, allowing application of the method across various morphologies.
-
 This is the implementation of the paper:
 
-> **Paper Title**
+> **Context-Aware Generation and Modulation of Expressive Motion Behavior using Multimodal Foundation Models**
 >
-> Author 1, Author 2, Author 3
+> Till Hielscher, Fabio Scaparro, Kai O. Arras
 >
-> Venue, Year
+> ACM/IEEE HRI 2026
 >
-> [![arXiv](https://img.shields.io/badge/arXiv-pdf-red)](https://arxiv.org/abs/xxxx.xxxxx)
+> [![PDF](https://img.shields.io/badge/Paper-PDF-red?logo=readthedocs&logoColor=white)](https://www.ki.uni-stuttgart.de/departments/sir/sir-data/sir-pdf/hielscher2026hri.pdf)
+
+The method aligns expressive motion behavior with an open-ended, multimodal interaction context. By automating the parametrization of animation DMPs, the method combines meaningful sequence generation with context-aware expressivity modulation. The implementation decouples control from specific robot hardware, allowing application of the method across various morphologies.
 
 ## Installation
 
@@ -27,7 +26,7 @@ conda create -n gen-mod-expressive-motion-behavior python=3.10
 
 First install the Animation DMP library:
 ```bash
-git clone https://github.com/<user>/animation-dmp.git
+git clone https://github.com/TillHielscher/animation-dmp.git
 pip install -e animation-dmp/
 ```
 
@@ -63,24 +62,30 @@ Note that Ollama does **not** support audio contexts.
 All settings live in a single file, `config.yaml`:
 
 ```yaml
-# Robot selection (pepper | gen3_lite | go2)
+# Configuration
+
+# Robot selection
+# Must match robot directory name: robot_{name}/robot_{name}.py with create_robot() function
+# Available robots: pepper, gen3_lite, go2
 robot: pepper
 
 # Operation modes
-use_real_robot: false # can be implemented for individual robots
-use_virtual_robot: true
+use_real_robot: false          # Use real robot hardware - not implemented
+use_virtual_robot: true        # Use virtual robot visualization - recommended
 
-# Planning
-short_pipeline: false        # true = single LLM call, false = three-stage pipeline
-modulate: true              # Apply animation-principle modulation to DMP playback
+# Pipeline configuration
+short_pipeline: false          # Use short planning pipeline - False by default. Works best with fine-tuned model
+modulate: true                 # Enable animation modulation
+debug: false                   # Enable debug logging
 
-# LLM backend ("openai" or "ollama")
-llm_backend: "openai"
+# LLM backend: "openai" or "ollama"
+llm_backend: "ollama"
 
-# OpenAI model ID
+# OpenAI-specific settings (only used when llm_backend is "openai")
 openai_model: "gpt-4.1"
 
-# Ollama model ID and host
+# Ollama-specific settings (only used when llm_backend is "ollama")
+# Note: Ollama does NOT support audio contexts.
 ollama_model: "gemma3:4b"
 ollama_host: "http://localhost:11434"
 
@@ -95,7 +100,7 @@ python main.py
 ```
 
 The system reads `config.yaml`, loads the selected robot, and starts the core.
-A Viser 3D viewer opens at **http://localhost:8088**.
+With "use_virtual_robot: true" a Viser 3D viewer opens at **http://localhost:8088**.
 
 ### Providing context
 
@@ -120,9 +125,9 @@ Modalities can be combined freely (e.g. text + image). When context is submitted
 
 | Robot | Type | DOF | Description |
 |-------|------|-----|-------------|
-| `pepper` | Humanoid | 17 | Arms, head, and torso gestures (SoftBank Robotics) |
-| `gen3_lite` | Robot arm | 7 | Kinova Gen3 Lite 7-DOF manipulator |
-| `go2` | Quadruped | 12 | Unitree Go2 with floating-base visualisation |
+| `pepper` | Humanoid | 17 | Aldebaran/Softbank Pepper with Arms, head, and torso gestures |
+| `gen3_lite` | Robot arm | 7 | Kinova Gen3 Lite 7-DOF manipulator (Here only few gesture primitives are provided) |
+| `go2` | Quadruped | 12 | Unitree Go2 with floating-base visualisation (Here only few gesture primitives are provided) |
 
 Each robot lives in its own directory:
 
@@ -132,7 +137,6 @@ robot_{name}/
 ├── robot_{name}.yaml               # Capabilities, primitive library, parameter ranges
 ├── robot_{name}_description/       # URDF and meshes
 ├── robot_{name}_primitives/        # DMP files (.json + _weights.npy)
-└── convert_trajectories.py         # (optional) Convert raw trajectories to DMPs
 ```
 
 Steps:
@@ -142,9 +146,11 @@ Steps:
    - **Required** – `get_joint_names()`, `get_joint_index()`, `get_urdf_path()`, `execute_state_on_virtual_robot()`
    - **Recommended** – `get_initial_joint_angles()` (default standing pose)
    - **Optional** – `handle_rt()` (real-time modulation), `compute_base_transform()` (floating-base robots)
+   - Call `self._ensure_follow_through_data()` at the end of `__init__` (after setting `self.urdf_path`)
 3. Add a `create_robot(robot_name)` factory function in the same file.
 4. Create a YAML config with `capabilities`, `primitive_lib`, and `parameter_ranges`.
-5. Record trajectories, convert them to DMPs, and place them in the primitives directory.
+   - `Follow_Through_Data` (kinematic chain relations for the Follow-Through modulation) is **auto-computed** from the URDF on first load and written back to the YAML. No manual entry needed.
+5. Record trajectories, convert them to DMPs, and place them in the primitives directory. Take the docs of the Animation DMP repository for reference (https://github.com/TillHielscher/animation-dmp.git)
 6. Set `robot: {name}` in `config.yaml`.
 
 
@@ -152,10 +158,10 @@ Steps:
 ## Citation
 
 ```bibtex
-@inproceedings{authorYEAR,
-  title     = {Paper Title},
-  author    = {Author 1 and Author 2 and Author 3},
-  booktitle = {Venue},
-  year      = {YEAR}
+@inproceedings{hielscher2026context,
+  author    = {Hielscher, Till and Scaparro, Fabio and Arras, Kai O.},
+  title     = {Context-Aware Generation and Modulation of Expressive Motion Behavior using Multimodal Foundation Models},
+  journal   = {ACM/IEEE International Conference on Human-Robot Interaction (HRI)},
+  year      = {2026},
 }
 ```
