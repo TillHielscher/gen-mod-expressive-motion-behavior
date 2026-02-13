@@ -8,7 +8,7 @@ This is the implementation of the paper:
 >
 > ACM/IEEE HRI 2026
 >
-> [![PDF](https://img.shields.io/badge/Paper-PDF-red?logo=readthedocs&logoColor=white)](https://www.ki.uni-stuttgart.de/departments/sir/sir-data/sir-pdf/hielscher2026hri.pdf)
+> [![Project Page](https://img.shields.io/badge/🌐-Project_Page-black?style=for-the-badge)](https://gen-mod-expressive-motion-behavior.github.io/)
 
 The method aligns expressive motion behavior with an open-ended, multimodal interaction context. By automating the parametrization of animation DMPs, the method combines meaningful sequence generation with context-aware expressivity modulation. The implementation decouples control from specific robot hardware, allowing application of the method across various morphologies.
 
