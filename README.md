@@ -6,7 +6,7 @@ This is the implementation of the paper:
 >
 > Till Hielscher, Fabio Scaparro, Kai O. Arras
 >
-> ACM/IEEE International Conference on Human-Robot Interaction (HRI)
+> ACM/IEEE International Conference on Human-Robot Interaction (HRI), 2026
 >
 > [![Project Page](https://img.shields.io/badge/🌐-Project_Page-black?style=for-the-badge)](https://gen-mod-expressive-motion-behavior.github.io/)
 
