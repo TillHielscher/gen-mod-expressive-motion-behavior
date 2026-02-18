@@ -106,6 +106,8 @@ viser_port: 8088                    # Viser web-viewer port
 prompt_data_path: "prompts.yaml"
 ```
 
+Please note that we can not make the distilled model (which would be used with the short pipeline) available currently.
+
 ## Usage
 
 ```bash
