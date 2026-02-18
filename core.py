@@ -49,12 +49,26 @@ class Core:
         ollama_model: str = "llama3.1",
         ollama_host: str = "http://localhost:11434",
         debug: bool = False,
+        controller_loop_hz: int = 60,
+        rt_data_loop_hz: int = 20,
+        planner_trigger_interval: float = 0.1,
+        context_listener_interval: float = 0.5,
+        viser_port: int = 8088,
+        llm_temperature: float = 0.0,
+        whisper_model: str = "gpt-4o-transcribe",
     ) -> None:
         self.robot = robot
         self.use_real_robot = use_real_robot
         self.use_virtual_robot = use_virtual_robot
         self.short_pipeline = short_pipeline
         self.modulate = modulate
+
+        # Loop / timing configuration
+        self.controller_loop_hz = controller_loop_hz
+        self.rt_data_loop_hz = rt_data_loop_hz
+        self.planner_trigger_interval = planner_trigger_interval
+        self.context_listener_interval = context_listener_interval
+        self.viser_port = viser_port
 
         # Logging
         level = logging.DEBUG if debug else logging.INFO
@@ -71,6 +85,8 @@ class Core:
             openai_model=openai_model,
             ollama_model=ollama_model,
             ollama_host=ollama_host,
+            llm_temperature=llm_temperature,
+            whisper_model=whisper_model,
         )
         self.context_store = ContextStore()
         self._executor = ThreadPoolExecutor(max_workers=1)
@@ -98,6 +114,7 @@ class Core:
                 urdf_path=self.robot.get_urdf_path(),
                 initial_joint_angles=initial_angles,
                 principle_ranges=self._principle_ranges,
+                port=self.viser_port,
             )
             self.view.attach_core(self)
             await self._wait_for_client()
@@ -111,9 +128,9 @@ class Core:
 
     # -- Real-time data loop -----------------------------------------------
 
-    async def _rt_data_loop(self, hz: int = 20) -> None:
+    async def _rt_data_loop(self) -> None:
         """Core-owned async loop that calls the robot's handle_rt()."""
-        interval = 1.0 / hz
+        interval = 1.0 / self.rt_data_loop_hz
         while True:
             block = self.timeline.get_current_block()
             if block is not None:
@@ -122,8 +139,8 @@ class Core:
 
     # -- Controller loop ---------------------------------------------------
 
-    async def _controller_loop(self, hz: int = 60) -> None:
-        interval = 1.0 / hz
+    async def _controller_loop(self) -> None:
+        interval = 1.0 / self.controller_loop_hz
         cycle_even = True
 
         while True:
@@ -156,7 +173,7 @@ class Core:
             text = raw.strip()
             if text:
                 self.context_store.push({"text": text})
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(self.context_listener_interval)
 
     # -- Planner trigger ---------------------------------------------------
 
@@ -201,7 +218,7 @@ class Core:
                     self.view.build_sequence(unmapped_seq)
                     self.view.set_status("⏳ **Awaiting context**")
 
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(self.planner_trigger_interval)
 
     # -- Modulation --------------------------------------------------------
 

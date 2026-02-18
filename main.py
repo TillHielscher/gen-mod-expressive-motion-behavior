@@ -50,6 +50,10 @@ def main() -> None:
     print(f"Pipeline     : {'short' if config['short_pipeline'] else 'long'}")
     print(f"Modulation   : {config['modulate']}")
     print(f"LLM backend  : {config.get('llm_backend', 'openai')}")
+    print(f"Ctrl loop    : {config.get('controller_loop_hz', 60)} Hz")
+    print(f"RT loop      : {config.get('rt_data_loop_hz', 20)} Hz")
+    print(f"Viser port   : {config.get('viser_port', 8088)}")
+    print(f"LLM temp     : {config.get('llm_temperature', 0.0)}")
     print(f"Debug        : {config['debug']}")
     print()
 
@@ -65,6 +69,13 @@ def main() -> None:
         ollama_model=config.get("ollama_model", "gemma3:4b"),
         ollama_host=config.get("ollama_host", "http://localhost:11434"),
         debug=config["debug"],
+        controller_loop_hz=config.get("controller_loop_hz", 60),
+        rt_data_loop_hz=config.get("rt_data_loop_hz", 20),
+        planner_trigger_interval=config.get("planner_trigger_interval", 0.1),
+        context_listener_interval=config.get("context_listener_interval", 0.5),
+        viser_port=config.get("viser_port", 8088),
+        llm_temperature=config.get("llm_temperature", 0.0),
+        whisper_model=config.get("whisper_model", "gpt-4o-transcribe"),
     )
 
     try:

@@ -130,10 +130,14 @@ class Planner:
         openai_model: str = "gpt-4.1",
         ollama_model: str = "llama3.1",
         ollama_host: str = "http://localhost:11434",
+        llm_temperature: float = 0.0,
+        whisper_model: str = "gpt-4o-transcribe",
     ) -> None:
         self.robot = robot
         self.prompt_data = self._load_yaml(prompt_data_path)
         self.llm_backend = llm_backend
+        self.llm_temperature = llm_temperature
+        self.whisper_model = whisper_model
 
         if llm_backend == "openai":
             if OpenAI is None:
@@ -198,6 +202,7 @@ class Planner:
             system_prompt,
             input_data.model_dump(),
             PlanWithContextOutput,
+            temperature=self.llm_temperature,
             image_path=context.get("image"),
         )
 
@@ -223,6 +228,7 @@ class Planner:
             self.prompt_data["context_to_sequence"],
             input_data.model_dump(),
             ContextToSequenceOutput,
+            temperature=self.llm_temperature,
             image_path=context.get("image"),
         )
         return result.motion_primitive_sequence
@@ -237,6 +243,7 @@ class Planner:
             self.prompt_data["context_and_sequence_to_animation_description"],
             input_data.model_dump(),
             ContextAndSequenceToAnimationDescriptionOutput,
+            temperature=self.llm_temperature,
             image_path=context.get("image"),
         )
         return result.animation_descriptions
@@ -251,6 +258,7 @@ class Planner:
             self.prompt_data["animation_description_to_animation_principle_description"],
             input_data.model_dump(),
             AnimationDescriptionToAnimationPrincipleDescriptionOutput,
+            temperature=self.llm_temperature,
         )
         return self._map_principles_to_parameters(result.dict()), result.dict()
 
@@ -301,7 +309,7 @@ class Planner:
             )
         with open(audio_path, "rb") as f:
             result = self.openai_client.audio.transcriptions.create(
-                model="gpt-4o-transcribe",
+                model=self.whisper_model,
                 file=f,
                 prompt="Transcribe the contents. It can be speech or sounds.",
             )

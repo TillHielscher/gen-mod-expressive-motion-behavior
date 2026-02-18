@@ -1,29 +1,42 @@
-# Configuration
+# ===========================================================================
+#  Configuration
+# ===========================================================================
 
-# Robot selection
-# Must match robot directory name: robot_{name}/robot_{name}.py with create_robot() function
-# Available robots: "pepper", "gen3_lite", "go2"
+# ── Robot ──────────────────────────────────────────────────────────────────
+# Must match directory name: robot_{name}/robot_{name}.py with create_robot()
+# Available: "pepper", "gen3_lite", "go2"
 robot: pepper
 
-# Operation modes
-use_real_robot: false          # Use real robot hardware (currently only supports Pepper)
-use_virtual_robot: true        # Use virtual robot visualization
+# ── Operation Modes ───────────────────────────────────────────────────────
+use_real_robot: false               # Use real robot hardware
+use_virtual_robot: true             # Use Viser-based 3D viewer
 
-# Pipeline configuration
-short_pipeline: false           # Use short planning pipeline (faster)
-modulate: true                 # Enable animation modulation
-debug: false                   # Enable debug logging
+# ── Pipeline ──────────────────────────────────────────────────────────────
+short_pipeline: false               # Use short pipeline
+modulate: true                      # Apply animation-principle modulation to DMPs
+debug: false                        # Enable debug-level logging
 
-# LLM backend: "openai" or "ollama"
-llm_backend: "ollama"
+# ── LLM Backend ──────────────────────────────────────────────────────────
+llm_backend: "ollama"               # "openai" or "ollama"
+llm_temperature: 0.0                # Sampling temperature (0.0 = deterministic (default))
 
-# OpenAI-specific settings (only used when llm_backend is "openai")
-openai_model: "gpt-4.1" # ft:gpt-4.1-nano-2025-04-14:tillkisir:ft-v1:CDsmIPYb
+# OpenAI (only used when llm_backend is "openai")
+openai_model: "gpt-4.1"
+whisper_model: "gpt-4o-transcribe"  # Whisper model for audio transcription
 
-# Ollama-specific settings (only used when llm_backend is "ollama")
+# Ollama (only used when llm_backend is "ollama")
 # Note: Ollama does NOT support audio contexts.
 ollama_model: "gemma3:4b"
 ollama_host: "http://localhost:11434"
 
-# Paths
+# ── Timing & Frequencies ─────────────────────────────────────────────────
+controller_loop_hz: 60              # DMP control loop (Hz)
+rt_data_loop_hz: 20                 # Real-time data handling, e.g. tracking (Hz)
+planner_trigger_interval: 0.1       # Planner polling interval (s)
+context_listener_interval: 0.5      # Context listener polling interval (s)
+
+# ── Viewer ────────────────────────────────────────────────────────────────
+viser_port: 8088                    # Viser web-viewer port
+
+# ── Paths ─────────────────────────────────────────────────────────────────
 prompt_data_path: "prompts.yaml"
