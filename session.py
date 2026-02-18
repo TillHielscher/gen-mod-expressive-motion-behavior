@@ -1,14 +1,22 @@
 """
-Session – robot base interface and Viser-based virtual session.
+Session - robot base interface and Viser-based virtual session.
+
+``_URDFKinematicAnalyzer``
+    Parses a URDF and discovers axis-alignment relations between revolute
+    joints.  Used internally by ``RobotBase`` to auto-generate
+    ``Follow_Through_Data`` when it is not already present in the robot YAML.
 
 ``RobotBase``
     Abstract interface that every robot module must implement.  Includes
     automatic kinematic analysis to derive ``Follow_Through_Data`` from
-    the URDF when it is not already present in the robot YAML.
+    the URDF when it is not already present in the robot YAML.  Provides
+    default implementations for real-robot session management, real-time
+    modulation hooks, and floating-base transform computation.
 
 ``ViserView``
     Unified Viser server providing the 3D URDF viewer **and** all GUI panels
-    (context inputs, planner status, sequence visualization).
+    (context inputs, planner status, now-playing display, and sequence
+    visualisation with per-principle sliders for live re-modulation).
 """
 
 from __future__ import annotations

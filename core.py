@@ -1,5 +1,5 @@
 """
-Core – orchestrates timeline, planner, and context.
+Core - orchestrates timeline, planner, and context.
 
 The **ViserView** (Viser-based URDF viewer + GUI) is created here but lives
 in ``session.py``.  It is robot-agnostic: it only needs a URDF path and

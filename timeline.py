@@ -187,7 +187,3 @@ class Timeline:
                 for idx in self.robot.rt_goal_indices:
                     if idx < len(last_goal):
                         self.current_block.dmp.goal[idx] = last_goal[idx]
-            # # Preserve tracked goal channels (head yaw / pitch when present)
-            # if last_goal is not None and len(last_goal) > 4:
-            #     self.current_block.dmp.goal[3] = last_goal[3]
-            #     self.current_block.dmp.goal[4] = last_goal[4]

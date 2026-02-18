@@ -43,7 +43,7 @@ def main() -> None:
     config = load_config()
     robot = create_robot(config)
 
-    print(f"=== LLAG System ===")
+    print(f"=== gen-mod-expressive-motion-behavior System ===")
     print(f"Robot        : {config['robot']}")
     print(f"Virtual      : {config['use_virtual_robot']}")
     print(f"Real robot   : {config['use_real_robot']}")
@@ -62,7 +62,7 @@ def main() -> None:
         prompt_data_path=config["prompt_data_path"],
         llm_backend=config.get("llm_backend", "openai"),
         openai_model=config.get("openai_model", "gpt-4.1"),
-        ollama_model=config.get("ollama_model", "llama3.1"),
+        ollama_model=config.get("ollama_model", "gemma3:4b"),
         ollama_host=config.get("ollama_host", "http://localhost:11434"),
         debug=config["debug"],
     )
