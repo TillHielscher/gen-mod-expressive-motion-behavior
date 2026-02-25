@@ -55,6 +55,7 @@ class Gen3LiteRobot(RobotBase):
         )
 
         self._ensure_follow_through_data()
+        self.prepare_handle_rt()
 
     # -- Robot description related ---------------------------------------------
     
