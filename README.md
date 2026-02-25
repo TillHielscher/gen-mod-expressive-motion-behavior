@@ -166,7 +166,7 @@ Steps:
    - **Required** – `get_joint_names()`, `get_joint_index()`, `get_urdf_path()`, `execute_state_on_virtual_robot()`
    - **Recommended** – `get_initial_joint_angles()` (default standing pose)
    - **Optional** – `handle_rt()` (real-time modulation), `compute_base_transform()` (floating-base robots)
-   - Call `self._ensure_follow_through_data()` at the end of `__init__` (after setting `self.urdf_path`)
+   - Call `self._ensure_follow_through_data()` and `self.prepare_handle_rt()` at the end of `__init__` (after setting `self.urdf_path`)
 3. Add a `create_robot(robot_name)` factory function in the same file.
 4. Create a YAML config with `capabilities`, `primitive_lib`, and `parameter_ranges`.
    - `Follow_Through_Data` (kinematic chain relations for the Follow-Through modulation) is **auto-computed** from the URDF on first load and written back to the YAML. No manual entry needed.
