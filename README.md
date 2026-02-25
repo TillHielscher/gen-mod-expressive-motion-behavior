@@ -42,6 +42,8 @@ pip install -r requirements.txt
 
 ### 3. Set up an foundation model backend
 
+Note: Due to OpenAI restrictions, the distilled model cannot be shared. Therefore, the best results can be achieved using the multi-step ("long") pipeline, in exchange for reaction times, or distilling a new model.
+
 **Option A – OpenAI (default)**
 
 Set your API key as an environment variable:
