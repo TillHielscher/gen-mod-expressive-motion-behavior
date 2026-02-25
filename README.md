@@ -22,6 +22,11 @@ The code is tested on python 3.10, but should work on newer and older versions
 conda create -n gen-mod-expressive-motion-behavior python=3.10
 ```
 
+```bash
+git clone https://github.com/TillHielscher/gen-mod-expressive-motion-behavior.git
+cd gen-mod-expressive-motion-behavior
+```
+
 ### 2. Install dependencies
 
 First install the Animation DMP library:
