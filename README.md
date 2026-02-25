@@ -29,7 +29,7 @@ cd gen-mod-expressive-motion-behavior
 
 ### 2. Install dependencies
 
-First install the Animation DMP library:
+First install the Animation DMP library (https://github.com/TillHielscher/animation-dmp):
 ```bash
 git clone https://github.com/TillHielscher/animation-dmp.git
 pip install -e animation-dmp/
@@ -170,7 +170,7 @@ Steps:
 3. Add a `create_robot(robot_name)` factory function in the same file.
 4. Create a YAML config with `capabilities`, `primitive_lib`, and `parameter_ranges`.
    - `Follow_Through_Data` (kinematic chain relations for the Follow-Through modulation) is **auto-computed** from the URDF on first load and written back to the YAML. No manual entry needed.
-5. Record trajectories, convert them to DMPs, and place them in the primitives directory. Take the docs of the Animation DMP repository for reference (https://github.com/TillHielscher/animation-dmp.git)
+5. Record trajectories, convert them to DMPs, and place them in the primitives directory. Take the docs of the Animation DMP repository for reference (https://github.com/TillHielscher/animation-dmp)
 6. Set `robot: {name}` in `config.yaml`.
 
 
